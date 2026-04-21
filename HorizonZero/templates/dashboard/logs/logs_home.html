@@ -1,0 +1,412 @@
+{% extends "dashboard/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Logs de Auditoría{% endblock %}
+
+{% block breadcrumb %}
+<span>Sistema</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span class="text-primary">Logs de Auditoría</span>
+{% endblock %}
+
+{% block page_title %}Registros de Auditoría{% endblock %}
+
+{% block content %}
+<div class="p-6 space-y-6">
+
+  {# ── Mensajes ── #}
+  {% for msg in messages %}
+  <div class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
+    {% if msg.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+    {% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+    <span class="material-symbols-outlined text-[18px]">info</span>{{ msg }}
+  </div>
+  {% endfor %}
+
+  {# ── KPIs ── #}
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+    <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Eventos</p>
+        <span class="material-symbols-outlined text-blue-500 text-[20px]">receipt_long</span>
+      </div>
+      <p class="text-3xl font-bold text-primary">{{ total_eventos }}</p>
+    </div>
+
+    <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Logins Fallidos</p>
+        <span class="material-symbols-outlined text-red-500 text-[20px]">login</span>
+      </div>
+      <p class="text-3xl font-bold text-red-500">{{ logins_fallidos }}</p>
+    </div>
+
+    <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Eventos Críticos</p>
+        <span class="material-symbols-outlined text-amber-500 text-[20px]">warning</span>
+      </div>
+      <p class="text-3xl font-bold text-amber-500">{{ acciones_criticas }}</p>
+    </div>
+
+    <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Usuarios que han ingresado a la plataforma</p>
+        <span class="material-symbols-outlined text-slate-500 text-[20px]">group</span>
+      </div>
+      <p class="text-3xl font-bold text-slate-700">{{ usuarios_unicos }}</p>
+    </div>
+
+  </div>
+
+{# ── Gráficos (accordion) ── #}
+<div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+
+  {# Header clickeable #}
+  <button type="button"
+          onclick="toggleMenu('seccion-graficos', 'icon-graficos')"
+          class="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors">
+    <div class="flex items-center gap-3">
+      <span class="material-symbols-outlined text-slate-500 text-[20px]">bar_chart</span>
+      <span class="font-semibold text-slate-700 text-sm">Análisis gráfico</span>
+      <span class="text-xs text-slate-400 font-normal">Actividad por día · Distribución por acción</span>
+    </div>
+    <span id="icon-graficos"
+          class="material-symbols-outlined text-slate-400 text-sm transition-transform duration-200">
+      expand_more
+    </span>
+  </button>
+
+  {# Contenido colapsable #}
+  <div id="seccion-graficos" class="hidden border-t border-slate-100">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 p-5">
+
+      {# Actividad por día #}
+      <div class="lg:col-span-2">
+        <h3 class="text-sm font-semibold text-slate-700 mb-3">Actividad por día</h3>
+        <div class="relative h-48">
+          <canvas id="chart-actividad"></canvas>
+        </div>
+      </div>
+
+      {# Distribución por acción #}
+      <div>
+        <h3 class="text-sm font-semibold text-slate-700 mb-3">Distribución por acción</h3>
+        <div class="relative h-48">
+          <canvas id="chart-distribucion"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+  {# ── Filtros + exportar ── #}
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+    <form method="get" class="space-y-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1">Usuario</label>
+          <input type="text" name="usuario" value="{{ filtro_usuario }}"
+                 placeholder="Buscar usuario..."
+                 class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1">Acción</label>
+          <select name="accion"
+                  class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white">
+            <option value="">Todas</option>
+            {% for val, label in acciones %}
+            <option value="{{ val }}" {% if filtro_accion == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1">Módulo</label>
+          <select name="modulo"
+                  class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white">
+            <option value="">Todos</option>
+            {% for val, label in modulos %}
+            <option value="{{ val }}" {% if filtro_modulo == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1">Severidad</label>
+          <select name="severidad"
+                  class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white">
+            <option value="">Todas</option>
+            {% for val, label in severidades %}
+            <option value="{{ val }}" {% if filtro_severidad == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1">IP Address</label>
+          <input type="text" name="ip" value="{{ filtro_ip }}"
+                 placeholder="Ej: 192.168.1.1"
+                 class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1">Desde</label>
+          <input type="date" name="desde" value="{{ filtro_desde }}"
+                 class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1">Hasta</label>
+          <input type="date" name="hasta" value="{{ filtro_hasta }}"
+                 class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+        </div>
+
+        <div class="flex items-end gap-2">
+          <button type="submit"
+                  class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors">
+            <span class="material-symbols-outlined text-[16px]">search</span>
+            Filtrar
+          </button>
+          {% if filtro_usuario or filtro_accion or filtro_modulo or filtro_severidad or filtro_ip or filtro_desde or filtro_hasta %}
+          <a href="{% url 'dashboard:logs_home' %}"
+             class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm transition-colors">
+            <span class="material-symbols-outlined text-[16px] text-slate-500">close</span>
+          </a>
+          {% endif %}
+        </div>
+
+      </div>
+    </form>
+
+    {# Botones de exportar #}
+    <div class="flex items-center gap-3 mt-4 pt-4 border-t border-slate-100">
+      <span class="text-xs text-slate-400 font-medium">Exportar:</span>
+      <a href="{% url 'dashboard:logs_export_excel' %}?{{ request.GET.urlencode }}"
+         class="flex items-center gap-2 px-4 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl text-sm font-medium transition-colors">
+        <span class="material-symbols-outlined text-[16px]">table_view</span>
+        Excel
+      </a>
+      <a href="{% url 'dashboard:logs_export_pdf' %}?{{ request.GET.urlencode }}"
+         class="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl text-sm font-medium transition-colors">
+        <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+        PDF
+      </a>
+      <span class="text-xs text-slate-300 ml-auto">
+        Los filtros activos se aplican a la exportación
+      </span>
+    </div>
+  </div>
+
+  {# ── Tabla de logs ── #}
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+
+    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+      <h3 class="font-semibold text-slate-700">
+        Registros
+        <span class="ml-2 text-xs font-normal text-slate-400">
+          ({{ paginator.count }} resultado{% if paginator.count != 1 %}s{% endif %})
+        </span>
+      </h3>
+      <span class="text-xs text-slate-400">Mostrando 10 por página · Orden: más reciente primero</span>
+    </div>
+
+    {% if logs %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-50 text-xs text-slate-500 uppercase tracking-wider">
+            <th class="px-4 py-3 text-left font-medium">Fecha / Hora</th>
+            <th class="px-4 py-3 text-left font-medium">Usuario</th>
+            <th class="px-4 py-3 text-left font-medium">Acción</th>
+            <th class="px-4 py-3 text-left font-medium">Módulo</th>
+            <th class="px-4 py-3 text-left font-medium">Severidad</th>
+            <th class="px-4 py-3 text-left font-medium">Descripción</th>
+            <th class="px-4 py-3 text-left font-medium">IP</th>
+            <th class="px-4 py-3 text-center font-medium">Detalle</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for log in logs %}
+          <tr class="hover:bg-slate-50 transition-colors
+            {% if log.severidad == 'CRITICAL' %}bg-red-50/50
+            {% elif log.severidad == 'WARNING' %}bg-amber-50/50{% endif %}">
+
+            <td class="px-4 py-3 text-xs text-slate-500 font-mono whitespace-nowrap">
+              {{ log.fecha|date:"d/m/Y" }}<br>
+              <span class="text-slate-400">{{ log.fecha|date:"H:i:s" }}</span>
+            </td>
+
+            <td class="px-4 py-3">
+              <span class="font-medium text-slate-700 text-xs">{{ log.username }}</span>
+            </td>
+
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                {% if 'LOGIN_FAIL' in log.accion or 'DENEGADO' in log.accion %}bg-red-100 text-red-700
+                {% elif 'DELETE' in log.accion %}bg-orange-100 text-orange-700
+                {% elif 'CREATE' in log.accion %}bg-green-100 text-green-700
+                {% elif 'UPDATE' in log.accion or 'RESTORE' in log.accion %}bg-blue-100 text-blue-700
+                {% elif 'EXPORT' in log.accion %}bg-purple-100 text-purple-700
+                {% else %}bg-slate-100 text-slate-600{% endif %}">
+                {{ log.get_accion_display }}
+              </span>
+            </td>
+
+            <td class="px-4 py-3">
+              <span class="text-xs text-slate-500">{{ log.get_modulo_display }}</span>
+            </td>
+
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-1 text-xs font-medium
+                {% if log.severidad == 'CRITICAL' %}text-red-600
+                {% elif log.severidad == 'WARNING' %}text-amber-600
+                {% else %}text-blue-600{% endif %}">
+                <span class="w-1.5 h-1.5 rounded-full
+                  {% if log.severidad == 'CRITICAL' %}bg-red-500
+                  {% elif log.severidad == 'WARNING' %}bg-amber-500
+                  {% else %}bg-blue-500{% endif %}"></span>
+                {{ log.get_severidad_display }}
+              </span>
+            </td>
+
+            <td class="px-4 py-3 text-xs text-slate-600 max-w-xs truncate" title="{{ log.descripcion }}">
+              {{ log.descripcion }}
+            </td>
+
+            <td class="px-4 py-3 text-xs text-slate-400 font-mono">
+              {{ log.ip_address|default:"—" }}
+            </td>
+
+            <td class="px-4 py-3 text-center">
+              <a href="{% url 'dashboard:log_detalle' log.id  %}"
+                 class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-primary hover:text-white rounded-lg text-xs font-medium transition-colors">
+                <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+              </a>
+            </td>
+
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {# Paginación #}
+    {% if page_obj.has_other_pages %}
+    <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+      <p class="text-xs text-slate-400">
+        Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }}
+        de {{ paginator.count }} registros
+      </p>
+      <div class="flex items-center gap-1">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}"
+           class="px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Anterior</a>
+        {% endif %}
+        {% for num in paginator.page_range %}
+          {% if page_obj.number == num %}
+          <span class="px-3 py-1.5 text-sm bg-primary text-white rounded-lg font-medium">{{ num }}</span>
+          {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+          <a href="?page={{ num }}&{{ request.GET.urlencode }}"
+             class="px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}"
+           class="px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Siguiente</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="py-16 text-center">
+      <span class="material-symbols-outlined text-4xl text-slate-300">search_off</span>
+      <p class="mt-2 text-slate-400 text-sm">No se encontraron registros con los filtros aplicados</p>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    const labelActividad = {{ grafico_labels|safe }}.length 
+        ? {{ grafico_labels|safe }} 
+        : ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+    const dataActividad = {{ grafico_data|safe }}.length 
+        ? {{ grafico_data|safe }} 
+        : [0, 0, 0, 0, 0, 0, 0];
+
+    const labelDist = {{ dist_labels|safe }}.length 
+        ? {{ dist_labels|safe }} 
+        : ['Sin datos'];
+
+    const dataDist = {{ dist_data|safe }}.length 
+        ? {{ dist_data|safe }} 
+        : [1];
+
+    new Chart(document.getElementById('chart-actividad'), {
+      type: 'line',
+      data: {
+        labels: labelActividad,
+        datasets: [{
+          label: 'Eventos',
+          data: dataActividad,
+          borderColor: '#003FB7',
+          backgroundColor: 'rgba(0,63,183,0.08)',
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: '#003FB7',
+          fill: true,
+          tension: 0.3,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+          y: { beginAtZero: true, ticks: { font: { size: 10 }, stepSize: 1 } }
+        }
+      }
+    });
+
+    new Chart(document.getElementById('chart-distribucion'), {
+      type: 'doughnut',
+      data: {
+        labels: labelDist,
+        datasets: [{
+          data: dataDist,
+          backgroundColor: [
+            '#003FB7','#FFC900','#DC2626','#16A34A',
+            '#7C3AED','#0891B2','#EA580C','#64748B'
+          ],
+          borderWidth: 2,
+          borderColor: '#fff',
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { font: { size: 10 }, boxWidth: 12, padding: 8 }
+          }
+        }
+      }
+    });
+
+});
+</script>
+{% endblock %}

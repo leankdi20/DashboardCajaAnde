@@ -1,0 +1,182 @@
+{% extends "dashboard/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Detalle Log #{{ log.id }}{% endblock %}
+
+{% block breadcrumb %}
+<span>Sistema</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<a href="{% url 'dashboard:logs_home' %}" class="hover:text-primary transition-colors">Logs</a>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span class="text-primary">#{{ log.id }}</span>
+{% endblock %}
+
+{% block page_title %}Detalle del Registro #{{ log.id }}{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-4xl space-y-5">
+
+  {# ── Encabezado ── #}
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-wrap items-center gap-4">
+
+    <div class="w-12 h-12 rounded-full flex items-center justify-center
+      {% if log.severidad == 'CRITICAL' %}bg-red-100
+      {% elif log.severidad == 'WARNING' %}bg-amber-100
+      {% else %}bg-blue-100{% endif %}">
+      <span class="material-symbols-outlined text-[22px]
+        {% if log.severidad == 'CRITICAL' %}text-red-500
+        {% elif log.severidad == 'WARNING' %}text-amber-500
+        {% else %}text-blue-500{% endif %}">
+        {% if log.severidad == 'CRITICAL' %}report{% elif log.severidad == 'WARNING' %}warning{% else %}info{% endif %}
+      </span>
+    </div>
+
+    <div class="flex-1 min-w-0">
+      <p class="font-bold text-slate-800">{{ log.get_accion_display }}</p>
+      <p class="text-xs text-slate-400 mt-0.5">
+        {{ log.fecha|date:"d/m/Y \a \l\a\s H:i:s" }} · {{ log.username }}
+      </p>
+    </div>
+
+    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium
+      {% if log.severidad == 'CRITICAL' %}bg-red-100 text-red-700
+      {% elif log.severidad == 'WARNING' %}bg-amber-100 text-amber-700
+      {% else %}bg-blue-100 text-blue-700{% endif %}">
+      <span class="w-1.5 h-1.5 rounded-full
+        {% if log.severidad == 'CRITICAL' %}bg-red-500
+        {% elif log.severidad == 'WARNING' %}bg-amber-500
+        {% else %}bg-blue-500{% endif %}"></span>
+      {{ log.get_severidad_display }}
+    </span>
+
+    <a href="{% url 'dashboard:logs_home' %}"
+       class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-medium transition-colors">
+      <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+      Volver
+    </a>
+  </div>
+
+  {# ── Datos principales ── #}
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-100">
+      <h3 class="font-semibold text-slate-700 text-sm">Información del evento</h3>
+    </div>
+    <div class="divide-y divide-slate-50">
+
+      {% with rows=data_rows %}
+      {% for label, valor in rows %}
+      <div class="px-5 py-3 flex gap-4">
+        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">{{ label }}</span>
+        <span class="text-sm text-slate-700">{{ valor|default:"—" }}</span>
+      </div>
+      {% endfor %}
+      {% endwith %}
+
+      <div class="px-5 py-3 flex gap-4">
+        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">ID Registro</span>
+        <span class="text-sm text-slate-700 font-mono">#{{ log.id }}</span>
+      </div>
+      <div class="px-5 py-3 flex gap-4">
+        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Fecha / Hora</span>
+        <span class="text-sm text-slate-700 font-mono">{{ log.fecha|date:"d/m/Y H:i:s" }}</span>
+      </div>
+      <div class="px-5 py-3 flex gap-4">
+        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Usuario</span>
+        <span class="text-sm text-slate-700 font-medium">{{ log.username }}</span>
+      </div>
+      <div class="px-5 py-3 flex gap-4">
+        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Acción</span>
+        <span class="text-sm text-slate-700">{{ log.get_accion_display }}</span>
+      </div>
+      <div class="px-5 py-3 flex gap-4">
+        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Módulo</span>
+        <span class="text-sm text-slate-700">{{ log.get_modulo_display }}</span>
+      </div>
+      <div class="px-5 py-3 flex gap-4">
+        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Severidad</span>
+        <span class="text-sm text-slate-700">{{ log.get_severidad_display }}</span>
+      </div>
+      <div class="px-5 py-3 flex gap-4">
+        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Descripción</span>
+        <span class="text-sm text-slate-700">{{ log.descripcion }}</span>
+      </div>
+      {% if log.objeto_id %}
+      <div class="px-5 py-3 flex gap-4">
+        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Objeto ID</span>
+        <span class="text-sm text-slate-700 font-mono">{{ log.objeto_id }}</span>
+      </div>
+      {% endif %}
+      {% if log.objeto_nombre %}
+      <div class="px-5 py-3 flex gap-4">
+        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Objeto</span>
+        <span class="text-sm text-slate-700">{{ log.objeto_nombre }}</span>
+      </div>
+      {% endif %}
+      <div class="px-5 py-3 flex gap-4">
+        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">IP Address</span>
+        <span class="text-sm text-slate-700 font-mono">{{ log.ip_address|default:"—" }}</span>
+      </div>
+      <div class="px-5 py-3 flex gap-4">
+        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">URL</span>
+        <span class="text-sm text-slate-500 font-mono break-all">{{ log.url|default:"—" }}</span>
+      </div>
+      <div class="px-5 py-3 flex gap-4">
+        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Método HTTP</span>
+        <span class="text-sm text-slate-700 font-mono">{{ log.metodo_http|default:"—" }}</span>
+      </div>
+      <div class="px-5 py-3 flex gap-4">
+        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Navegador</span>
+        <span class="text-sm text-slate-400 text-xs break-all">{{ log.user_agent|default:"—" }}</span>
+      </div>
+      <div class="px-5 py-3 flex gap-4">
+        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Vence el</span>
+        <span class="text-sm {% if log.esta_vencido %}text-red-500{% else %}text-slate-500{% endif %}">
+          {{ log.fecha_vencimiento|date:"d/m/Y" }}
+          {% if log.esta_vencido %}<span class="text-xs">(vencido)</span>{% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  {# ── Diff antes / después (solo si hay datos) ── #}
+  {% if datos_anteriores or datos_nuevos %}
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-100">
+      <h3 class="font-semibold text-slate-700 text-sm">Cambios registrados</h3>
+    </div>
+    <div class="grid grid-cols-2 divide-x divide-slate-100">
+
+      <div class="p-5">
+        <p class="text-xs font-medium text-slate-400 uppercase mb-3">Antes</p>
+        {% if datos_anteriores %}
+          {% for k, v in datos_anteriores.items %}
+          <div class="flex gap-2 mb-1.5">
+            <span class="text-xs text-slate-400 w-28 flex-shrink-0">{{ k }}</span>
+            <span class="text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded font-mono">{{ v }}</span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-xs text-slate-300 italic">Sin datos anteriores</p>
+        {% endif %}
+      </div>
+
+      <div class="p-5">
+        <p class="text-xs font-medium text-slate-400 uppercase mb-3">Después</p>
+        {% if datos_nuevos %}
+          {% for k, v in datos_nuevos.items %}
+          <div class="flex gap-2 mb-1.5">
+            <span class="text-xs text-slate-400 w-28 flex-shrink-0">{{ k }}</span>
+            <span class="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded font-mono">{{ v }}</span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-xs text-slate-300 italic">Sin datos nuevos</p>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

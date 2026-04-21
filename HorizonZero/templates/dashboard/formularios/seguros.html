@@ -1,0 +1,40 @@
+{% extends "dashboard/formularios_base.html" %}
+
+{% block formulario_titulo %}Seguros{% endblock %}
+{% block formulario_page_title %}Formularios — Seguros{% endblock %}
+
+{% block formulario_content %}
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+
+    {# 1. Seguro Viajero #}
+    <a href="{% url 'dashboard:soli_seguro_viajero_lista' %}"
+       class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <span class="material-symbols-outlined">flight_takeoff</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Seguro Viajero</p>
+            <p class="text-xs text-slate-400 mt-1">Asistencia médica global. Respaldo internacional ante emergencias médicas</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+
+    {# 2. Seguro Marchamo #}
+    <a href="{% url 'dashboard:soli_marchamo_lista' %}"
+       class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
+            <span class="material-symbols-outlined">directions_car</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Seguro Marchamo</p>
+            <p class="text-xs text-slate-400 mt-1">Protección vehicular extra. Cobertura contra daños a terceros, robos</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+
+</div>
+{% endblock %}

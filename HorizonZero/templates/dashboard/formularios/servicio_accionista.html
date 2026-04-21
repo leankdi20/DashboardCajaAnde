@@ -1,0 +1,26 @@
+{% extends "dashboard/formularios_base.html" %}
+ 
+{% block formulario_titulo %}Servicio al Accionista{% endblock %}
+{% block formulario_page_title %}Formularios — Servicio al Accionista{% endblock %}
+ 
+{% block formulario_content %}
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+ 
+    {# 1. Solicitud cambio contraseña CajaTel #}
+    <a href="{% url 'dashboard:soli_clave_temporal_cajatel_lista' %}"
+       class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <span class="material-symbols-outlined">headset_mic</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Solicitud de cambio contraseña cajatel</p>
+            <p class="text-xs text-slate-400 mt-1">Solicitud de clave temporal para acceso a CajaTel</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+ 
+</div>
+{% endblock %}
+ 

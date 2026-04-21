@@ -1,0 +1,267 @@
+{% extends "dashboard/formularios_base.html" %}
+{% load django_tables2 %}
+{% load humanize %}
+
+{% block formulario_content %}
+
+<div class="flex items-start justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-on-surface tracking-tight">Seguro Viajero</h1>
+
+  </div>
+  <a href="{% url 'dashboard:soli_seguro_viajero_export' %}?{{ request.GET.urlencode }}"
+     class="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors">
+    <span class="material-symbols-outlined text-base">download</span>Exportar Excel
+  </a>
+</div>
+
+{# ── KPIs ── #}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#003FB7;">
+      <span class="material-symbols-outlined text-white">flight_takeoff</span>
+    </div>
+    <div>
+      <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Total</span>
+      <p class="text-3xl font-bold text-primary">{{ kpis.total_solicitudes|default:"0"|intcomma }}</p>
+      <span class="text-xs text-on-surface-variant">solicitudes</span>
+    </div>
+  </div>
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#FFC900;">
+      <span class="material-symbols-outlined text-on-surface">public</span>
+    </div>
+    <div>
+      <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Destinos</span>
+      <p class="text-3xl font-bold text-on-surface">{{ kpis.total_destinos|default:"0"|intcomma }}</p>
+      <span class="text-xs text-on-surface-variant">destinos distintos</span>
+    </div>
+  </div>
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-green-100">
+      <span class="material-symbols-outlined text-green-600">group</span>
+    </div>
+    <div>
+      <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Con Beneficiario</span>
+      <p class="text-3xl font-bold text-on-surface">{{ kpis.total_con_beneficiario|default:"0"|intcomma }}</p>
+      <span class="text-xs text-on-surface-variant">tienen beneficiario</span>
+    </div>
+  </div>
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-purple-100">
+      <span class="material-symbols-outlined text-purple-600">calendar_month</span>
+    </div>
+    <div>
+      <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Días Activos</span>
+      <p class="text-3xl font-bold text-on-surface">{{ kpis.total_dias_activos|default:"0"|intcomma }}</p>
+      <span class="text-xs text-on-surface-variant">días con solicitudes</span>
+    </div>
+  </div>
+</div>
+
+
+{% if top_destinos %}
+{% load static %}
+ 
+<div class="bg-white rounded-2xl border border-outline-variant/30 overflow-hidden mb-6">
+ 
+  {# ── Header desplegable ── #}
+  <div class="p-4 flex justify-between items-center cursor-pointer border-b border-outline-variant/20"
+       id="destinos-header">
+    <h3 class="text-sm font-bold text-on-surface flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary text-base">bar_chart</span>
+      Análisis de Destinos y Tendencias
+    </h3>
+    <span id="destinos-chevron"
+          class="material-symbols-outlined text-slate-400 transition-transform duration-200">expand_more</span>
+  </div>
+ 
+  {# ── Contenido desplegable ── #}
+  <div id="destinos-panel" class="p-5 space-y-8" style="display:none;">
+ 
+    {# 1. Top 10 — gráfico de barras #}
+    <div>
+      <p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm text-primary">leaderboard</span>
+        Top 10 Destinos
+      </p>
+      <div style="height:300px;">
+        <canvas id="chartDestinos"></canvas>
+      </div>
+    </div>
+ 
+    {# 2. Cards Top 5 #}
+    <div>
+      <p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm text-primary">emoji_events</span>
+        Podio — Top 5 Destinos
+      </p>
+      <div id="cardsTopDestinos"></div>
+    </div>
+ 
+    {# 3. Timeline mensual #}
+    <div>
+      <p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm text-primary">show_chart</span>
+        Evolución Mensual de Solicitudes
+      </p>
+      <div style="height:240px;">
+        <canvas id="chartTimeline"></canvas>
+      </div>
+    </div>
+ 
+    {# 4. Mapa de calor #}
+    <div>
+      <p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm text-primary">grid_view</span>
+        Mapa de Calor — Solicitudes por Mes y Año
+      </p>
+      <div id="heatmapDestinos"></div>
+    </div>
+ 
+  </div>
+</div>
+ 
+{# ── Datos para Chart.js ── #}
+<script>
+  window.chartDestinosData = {
+    labels: [{% for d in top_destinos %}"{{ d.Destino|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+    values: [{% for d in top_destinos %}{{ d.total }}{% if not forloop.last %},{% endif %}{% endfor %}]
+  };
+ 
+  window.chartTimelineData = {
+    labels: [{% for t in timeline_data %}"{{ t.label|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+    values: [{% for t in timeline_data %}{{ t.total }}{% if not forloop.last %},{% endif %}{% endfor %}]
+  };
+ 
+  window.chartHeatmapData = {
+    anios: [{% for a in heatmap_anios %}{{ a }}{% if not forloop.last %},{% endif %}{% endfor %}],
+    data:  {{ heatmap_json|safe }}
+  };
+</script>
+ 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="{% static 'js/dashboard/desplegable_destinos.js' %}"></script>
+ 
+{% endif %}
+
+{# ── Filtros ── #}
+<section class="bg-white border border-outline-variant/30 rounded-2xl overflow-hidden mb-6">
+  <form method="GET" id="form-filtros">
+    <div class="p-4 flex justify-between items-center border-b border-outline-variant/20 cursor-pointer" id="filtros-header">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary">filter_alt</span>
+        <h4 class="font-bold text-sm text-on-surface">Filtros de Búsqueda</h4>
+        {% if filtros %}
+        <span class="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+          {{ filtros|length }} activo{% if filtros|length != 1 %}s{% endif %}
+        </span>
+        {% endif %}
+      </div>
+      <div class="flex items-center gap-3">
+        {% if filtros %}
+        <a href="{% url 'dashboard:soli_seguro_viajero_lista' %}" onclick="event.stopPropagation()"
+           class="text-xs font-bold text-red-500 hover:underline flex items-center gap-1">
+          <span class="material-symbols-outlined text-[14px]">close</span>Limpiar todo
+        </a>
+        {% endif %}
+        <span id="filtros-chevron" class="material-symbols-outlined text-slate-400 transition-transform duration-200">expand_more</span>
+      </div>
+    </div>
+    <div id="filtros-panel" class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-slate-50 rounded-xl p-4 space-y-3">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">person</span>Accionista
+          </p>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">badge</span>Cédula
+            </label>
+            <select name="cedula" class="w-full ajax-select2" data-url="{% url 'dashboard:soli_seguro_viajero_buscar' 'cedula' %}">
+              {% if filtros.cedula %}<option value="{{ filtros.cedula }}" selected>{{ filtros.cedula }}</option>{% endif %}
+            </select>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">person</span>Nombre
+            </label>
+            <select name="nombre" class="w-full ajax-select2" data-url="{% url 'dashboard:soli_seguro_viajero_buscar' 'nombre' %}">
+              {% if filtros.nombre %}<option value="{{ filtros.nombre }}" selected>{{ filtros.nombre }}</option>{% endif %}
+            </select>
+          </div>
+        </div>
+        <div class="bg-slate-50 rounded-xl p-4 space-y-3">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">flight_takeoff</span>Viaje
+          </p>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">public</span>Destino
+            </label>
+            <select name="destino" class="w-full ajax-select2" data-url="{% url 'dashboard:soli_seguro_viajero_buscar' 'destino' %}">
+              {% if filtros.destino %}<option value="{{ filtros.destino }}" selected>{{ filtros.destino }}</option>{% endif %}
+            </select>
+          </div>
+        </div>
+        <div class="bg-slate-50 rounded-xl p-4 space-y-3">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">date_range</span>Período
+          </p>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">calendar_today</span>Desde
+            </label>
+            <input type="date" name="fecha_inicio" value="{{ filtros.fecha_inicio|default:'' }}" onchange="this.form.submit()"
+                   class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none">
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">event</span>Hasta
+            </label>
+            <input type="date" name="fecha_fin" value="{{ filtros.fecha_fin|default:'' }}" onchange="this.form.submit()"
+                   class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none">
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</section>
+
+<section class="bg-white rounded-2xl border border-outline-variant/20 overflow-hidden">
+  {% render_table table %}
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const panel = document.getElementById('filtros-panel');
+    const chevron = document.getElementById('filtros-chevron');
+    const header = document.getElementById('filtros-header');
+    if ({{ filtros|length }} === 0) { panel.style.display = 'none'; chevron.style.transform = 'rotate(-90deg)'; }
+    header.addEventListener('click', function () {
+      const oculto = panel.style.display === 'none';
+      panel.style.display = oculto ? 'block' : 'none';
+      chevron.style.transform = oculto ? 'rotate(0deg)' : 'rotate(-90deg)';
+    });
+  });
+</script>
+{% block scripts %}
+<script>
+$(document).ready(function () {
+  $('.ajax-select2').each(function () {
+    const url = $(this).data('url');
+    $(this).select2({
+      placeholder: "Escribir para buscar...", allowClear: true, width: '100%',
+      minimumInputLength: 1, dropdownParent: $('body'), dropdownCssClass: 'select2-dropdown-custom',
+      language: { noResults: function(){ return "Sin resultados"; }, searching: function(){ return "Buscando..."; }, inputTooShort: function(){ return "Escribí al menos 1 carácter"; } },
+      ajax: { url: url, dataType: 'json', delay: 300, data: function(p){ return { term: p.term||'' }; }, processResults: function(d){ return { results: d.results }; }, cache: true }
+    }).on('change', function(){ $('#form-filtros').submit(); });
+  });
+  $(document).on('select2:open', function () {
+    const sf = document.querySelector('.select2-container--open .select2-search__field');
+    if (sf) sf.style.cssText = 'display:block!important;width:100%!important;padding:6px 10px!important;border:1px solid #c4c8dc!important;border-radius:6px!important;font-size:14px!important;outline:none!important;background-color:white!important;color:#191c24!important;box-sizing:border-box!important;height:auto!important;opacity:1!important;visibility:visible!important;';
+  });
+});
+</script>
+{% endblock scripts %}
+{% endblock %}

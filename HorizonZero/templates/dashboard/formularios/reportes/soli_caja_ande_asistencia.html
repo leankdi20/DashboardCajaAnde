@@ -1,0 +1,236 @@
+{% extends "dashboard/formularios_base.html" %}
+{% load django_tables2 %}
+
+{% block formulario_content %}
+
+<div class="flex items-start justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-on-surface tracking-tight">Caja de ANDE Asistencia</h1>
+
+  </div>
+  <a href="{% url 'dashboard:caja_ande_asistencia_export' %}?{{ request.GET.urlencode }}"
+     class="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors">
+    <span class="material-symbols-outlined text-base">download</span>Exportar Excel
+  </a>
+</div>
+
+{# ── KPI Total ── #}
+<div class="mb-4">
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#003FB7;">
+      <span class="material-symbols-outlined text-white">health_and_safety</span>
+    </div>
+    <div>
+      <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Total Solicitudes</span>
+      <p class="text-4xl font-bold text-primary">{{ kpis.total_solicitudes|default:"0" }}</p>
+      <span class="text-xs text-on-surface-variant">Caja de ANDE Asistencia</span>
+    </div>
+  </div>
+</div>
+
+{# ── KPI por plan ── #}
+<div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-4 flex flex-col gap-1">
+    <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Básico</span>
+    <span class="text-2xl font-bold text-on-surface">{{ kpis.total_basico|default:"0" }}</span>
+    <span class="text-xs text-on-surface-variant">₡2.035 mensuales</span>
+  </div>
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-4 flex flex-col gap-1">
+    <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Familiar</span>
+    <span class="text-2xl font-bold text-on-surface">{{ kpis.total_familiar|default:"0" }}</span>
+    <span class="text-xs text-on-surface-variant">₡2.715 mensuales</span>
+  </div>
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-4 flex flex-col gap-1">
+    <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Salud</span>
+    <span class="text-2xl font-bold text-on-surface">{{ kpis.total_salud|default:"0" }}</span>
+    <span class="text-xs text-on-surface-variant">₡4.500 mensuales</span>
+  </div>
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-4 flex flex-col gap-1">
+    <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Extranjero</span>
+    <span class="text-2xl font-bold text-on-surface">{{ kpis.total_extranjero|default:"0" }}</span>
+    <span class="text-xs text-on-surface-variant">₡1.075 mensuales</span>
+  </div>
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-4 flex flex-col gap-1">
+    <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Edad de Oro</span>
+    <span class="text-2xl font-bold text-on-surface">{{ kpis.total_edad_oro|default:"0" }}</span>
+    <span class="text-xs text-on-surface-variant">₡2.260 mensuales</span>
+  </div>
+</div>
+
+{# ── KPI por tarjeta ── #}
+<div class="grid grid-cols-2 gap-4 mb-6">
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-4 flex flex-col gap-1">
+    <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Débito</span>
+    <span class="text-2xl font-bold text-on-surface">{{ kpis.total_debito|default:"0" }}</span>
+    <span class="text-xs text-on-surface-variant">Cobro por tarjeta de débito</span>
+  </div>
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-4 flex flex-col gap-1">
+    <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Crédito</span>
+    <span class="text-2xl font-bold text-on-surface">{{ kpis.total_credito|default:"0" }}</span>
+    <span class="text-xs text-on-surface-variant">Cobro por tarjeta de crédito</span>
+  </div>
+</div>
+
+{# ── Filtros ── #}
+<section class="bg-white border border-outline-variant/30 rounded-2xl overflow-hidden mb-6">
+  <form method="GET" id="form-filtros">
+    <div class="p-4 flex justify-between items-center border-b border-outline-variant/20 cursor-pointer" id="filtros-header">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary">filter_alt</span>
+        <h4 class="font-bold text-sm text-on-surface">Filtros de Búsqueda</h4>
+        {% if filtros %}
+        <span class="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+          {{ filtros|length }} activo{% if filtros|length != 1 %}s{% endif %}
+        </span>
+        {% endif %}
+      </div>
+      <div class="flex items-center gap-3">
+        {% if filtros %}
+        <a href="{% url 'dashboard:caja_ande_asistencia_lista' %}" onclick="event.stopPropagation()"
+           class="text-xs font-bold text-red-500 hover:underline flex items-center gap-1">
+          <span class="material-symbols-outlined text-[14px]">close</span>Limpiar todo
+        </a>
+        {% endif %}
+        <span id="filtros-chevron" class="material-symbols-outlined text-slate-400 transition-transform duration-200">expand_more</span>
+      </div>
+    </div>
+    <div id="filtros-panel" class="p-6 space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        {# ACCIONISTA #}
+        <div class="bg-slate-50 rounded-xl p-4 space-y-3">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">person</span>Accionista
+          </p>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">badge</span>Cédula
+            </label>
+            <select name="cedula" class="w-full ajax-select2" data-url="{% url 'dashboard:caja_ande_asistencia_buscar' 'cedula' %}">
+              {% if filtros.cedula %}<option value="{{ filtros.cedula }}" selected>{{ filtros.cedula }}</option>{% endif %}
+            </select>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">person</span>Nombre
+            </label>
+            <select name="nombre" class="w-full ajax-select2" data-url="{% url 'dashboard:caja_ande_asistencia_buscar' 'nombre' %}">
+              {% if filtros.nombre %}<option value="{{ filtros.nombre }}" selected>{{ filtros.nombre }}</option>{% endif %}
+            </select>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">mail</span>Correo
+            </label>
+            <select name="correo" class="w-full ajax-select2" data-url="{% url 'dashboard:caja_ande_asistencia_buscar' 'correo' %}">
+              {% if filtros.correo %}<option value="{{ filtros.correo }}" selected>{{ filtros.correo }}</option>{% endif %}
+            </select>
+          </div>
+        </div>
+
+        {# PLAN + TARJETA #}
+        <div class="bg-slate-50 rounded-xl p-4 space-y-3">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">health_and_safety</span>Plan y Tarjeta
+          </p>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">list_alt</span>Tipo de Plan
+            </label>
+            <select name="tipo_plan" class="w-full static-select2">
+              <option value="">Todos</option>
+              {% for p in planes %}
+              <option value="{{ p.TipoPlan }}" {% if filtros.tipo_plan == p.TipoPlan %}selected{% endif %}>
+                {{ p.TipoPlan }} ({{ p.total }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">credit_card</span>Tipo de Tarjeta
+            </label>
+            <select name="tipo_tarjeta" class="w-full static-select2">
+              <option value="">Todos</option>
+              {% for t in tarjetas %}
+              <option value="{{ t.TipoTarjeta }}" {% if filtros.tipo_tarjeta == t.TipoTarjeta %}selected{% endif %}>
+                {{ t.TipoTarjeta }} ({{ t.total }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        {# PERÍODO #}
+        <div class="bg-slate-50 rounded-xl p-4 space-y-3">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">date_range</span>Período
+          </p>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">calendar_today</span>Desde
+            </label>
+            <input type="date" name="fecha_inicio" value="{{ filtros.fecha_inicio|default:'' }}"
+                   onchange="this.form.submit()"
+                   class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none">
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">event</span>Hasta
+            </label>
+            <input type="date" name="fecha_fin" value="{{ filtros.fecha_fin|default:'' }}"
+                   onchange="this.form.submit()"
+                   class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none">
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </form>
+</section>
+
+{# ── Tabla ── #}
+<section class="bg-white rounded-2xl border border-outline-variant/20 overflow-hidden">
+  {% render_table table %}
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const panel = document.getElementById('filtros-panel');
+    const chevron = document.getElementById('filtros-chevron');
+    const header = document.getElementById('filtros-header');
+    if ({{ filtros|length }} === 0) { panel.style.display = 'none'; chevron.style.transform = 'rotate(-90deg)'; }
+    header.addEventListener('click', function () {
+      const oculto = panel.style.display === 'none';
+      panel.style.display = oculto ? 'block' : 'none';
+      chevron.style.transform = oculto ? 'rotate(0deg)' : 'rotate(-90deg)';
+    });
+  });
+</script>
+
+{% block scripts %}
+<script>
+$(document).ready(function () {
+  $('.ajax-select2').each(function () {
+    const url = $(this).data('url');
+    $(this).select2({
+      placeholder: "Escribir para buscar...", allowClear: true, width: '100%',
+      minimumInputLength: 1, dropdownParent: $('body'), dropdownCssClass: 'select2-dropdown-custom',
+      language: { noResults: function(){ return "Sin resultados"; }, searching: function(){ return "Buscando..."; }, inputTooShort: function(){ return "Escribí al menos 1 carácter"; } },
+      ajax: { url: url, dataType: 'json', delay: 300, data: function(p){ return { term: p.term||'' }; }, processResults: function(d){ return { results: d.results }; }, cache: true }
+    }).on('change', function(){ $('#form-filtros').submit(); });
+  });
+  $('.static-select2').select2({
+    placeholder: "Todos", allowClear: true, width: '100%',
+    dropdownParent: $('body'), dropdownCssClass: 'select2-dropdown-custom',
+    language: { noResults: function(){ return "Sin resultados"; } }
+  }).on('change', function(){ $('#form-filtros').submit(); });
+  $(document).on('select2:open', function () {
+    const sf = document.querySelector('.select2-container--open .select2-search__field');
+    if (sf) sf.style.cssText = 'display:block!important;width:100%!important;padding:6px 10px!important;border:1px solid #c4c8dc!important;border-radius:6px!important;font-size:14px!important;outline:none!important;background-color:white!important;color:#191c24!important;box-sizing:border-box!important;height:auto!important;opacity:1!important;visibility:visible!important;';
+  });
+});
+</script>
+{% endblock scripts %}
+
+{% endblock %}

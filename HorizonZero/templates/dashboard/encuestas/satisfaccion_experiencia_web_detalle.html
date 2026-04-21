@@ -1,0 +1,79 @@
+{% extends "dashboard/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Detalle Experiencia Web{% endblock %}
+
+{% block breadcrumb %}
+<span>Reportes</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span>Encuestas</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<a href="{% url 'dashboard:encuesta_experiencia_web' %}" class="hover:text-primary">Experiencia Web</a>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span class="text-primary">Detalle</span>
+{% endblock %}
+
+{% block page_title %}Detalle de Encuesta Experiencia Página Web{% endblock %}
+
+{% block content %}
+<div class="p-8 space-y-8">
+
+    <!-- Info general -->
+    <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-1">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Nombre</label>
+            <p class="bg-surface-container-highest/50 rounded-lg py-2.5 px-4 text-sm font-medium">{{ encabezado.Nombre|default:"—" }}</p>
+        </div>
+        <div class="space-y-1">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Fecha</label>
+            <p class="bg-surface-container-highest/50 rounded-lg py-2.5 px-4 text-sm font-medium">{{ encabezado.Fecha }}</p>
+        </div>
+    </div>
+
+    <!-- Preguntas -->
+    <div class="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/10">
+        <div class="bg-primary p-4 flex justify-between items-center">
+            <h3 class="text-white font-bold text-sm tracking-wide">Preguntas de la Encuesta</h3>
+            <span class="text-[10px] text-white/70 font-bold uppercase">Respuesta</span>
+        </div>
+        <div class="divide-y divide-outline-variant/10">
+            {% for fila in preguntas %}
+            <div class="p-5 flex justify-between items-center hover:bg-surface-container-low/30 transition-colors">
+                <p class="text-sm font-medium text-on-surface">{{ fila.Pregunta }}</p>
+                <span class="inline-flex items-center bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ml-6">
+                    {{ fila.Respuesta }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="grid grid-cols-2 gap-6">
+        <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10 flex flex-col gap-2">
+            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-2">
+                <span class="material-symbols-outlined">star</span>
+            </div>
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Puntuación NPS</p>
+            <p class="text-3xl font-black text-on-surface">{{ kpis.promedio_encuesta }} <span class="text-sm font-normal text-slate-400">/ 10</span></p>
+        </div>
+        <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10 flex flex-col gap-2">
+            <div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary mb-2">
+                <span class="material-symbols-outlined">percent</span>
+            </div>
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Satisfacción</p>
+            <p class="text-3xl font-black text-on-surface">{{ kpis.promedio_pct }}%</p>
+        </div>
+    </div>
+
+    <!-- Botones -->
+    <div class="pb-8 flex justify-between items-center">
+        <a href="{% url 'dashboard:encuesta_experiencia_web' %}"
+           class="inline-flex items-center gap-2 text-primary text-sm font-bold hover:underline">
+            <span class="material-symbols-outlined text-lg">arrow_back</span>
+            Volver a la lista
+        </a>
+    </div>
+
+</div>
+{% endblock %}

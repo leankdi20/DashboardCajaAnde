@@ -1,0 +1,188 @@
+{% extends "dashboard/formularios_base.html" %}
+
+{% block formulario_content %}
+
+<div class="flex items-center gap-2 text-xs text-on-surface-variant mb-6">
+  <a href="{% url 'dashboard:formulario_vivienda' %}" class="hover:text-primary transition-colors">Vivienda</a>
+  <span class="material-symbols-outlined text-sm">chevron_right</span>
+  <a href="{% url 'dashboard:soli_compra_vehiculo_lista' %}" class="hover:text-primary transition-colors">Compra de Vehículo</a>
+  <span class="material-symbols-outlined text-sm">chevron_right</span>
+  <span class="text-on-surface font-semibold">#{{ solicitud.respuesta_id }}</span>
+</div>
+
+<div class="flex items-start justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-on-surface tracking-tight">Detalle de Solicitud</h1>
+    <p class="text-sm text-on-surface-variant mt-1">
+      ID #{{ solicitud.respuesta_id }} ·
+      {% if solicitud.FechaHora %}{{ solicitud.FechaHora|date:"d/m/Y H:i" }}{% endif %}
+    </p>
+  </div>
+  <div class="flex items-center gap-3">
+    <a href="{% url 'dashboard:soli_compra_vehiculo_export_detalle' solicitud.respuesta_id %}"
+       class="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white
+              text-sm font-semibold hover:bg-primary/90 transition-colors">
+      <span class="material-symbols-outlined text-base">download</span>Exportar Excel
+    </a>
+    <a href="{% url 'dashboard:soli_compra_vehiculo_lista' %}"
+       class="flex items-center gap-2 px-4 py-2 rounded-xl border border-outline-variant/40
+              text-sm font-semibold text-on-surface-variant hover:bg-surface-container-low transition-colors">
+      <span class="material-symbols-outlined text-base">arrow_back</span>Volver
+    </a>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  {# Datos personales #}
+  <div class="bg-white rounded-2xl border border-outline-variant/20 overflow-hidden">
+    <div class="px-5 py-4 border-b border-outline-variant/20 flex items-center gap-2" style="background:#003FB7;">
+      <span class="material-symbols-outlined text-white text-base">person</span>
+      <span class="text-sm font-semibold text-white">Datos Personales</span>
+    </div>
+    <div class="p-5 divide-y divide-outline-variant/10">
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Cédula</span>
+        <span class="text-sm font-semibold text-on-surface">{{ solicitud.Cedula|default:"—" }}</span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Nombre</span>
+        <span class="text-sm text-on-surface text-right">{{ solicitud.NombreCompleto|default:"—" }}</span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Correo</span>
+        <span class="text-sm text-right">
+          {% if solicitud.Correo %}
+            <a href="mailto:{{ solicitud.Correo }}" class="text-primary hover:underline">{{ solicitud.Correo }}</a>
+          {% else %}—{% endif %}
+        </span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Fecha Nac.</span>
+        <span class="text-sm text-on-surface">{{ solicitud.FechaNacimiento|default:"—" }}</span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Estado Civil</span>
+        <span class="text-sm text-on-surface">{{ solicitud.EstadoCivil|default:"—" }}</span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Nacionalidad</span>
+        <span class="text-sm text-on-surface">{{ solicitud.Nacionalidad|default:"—" }}</span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Tel. Celular</span>
+        <span class="text-sm text-right">
+          {% if solicitud.TelefonoCelular %}
+            <a href="tel:{{ solicitud.TelefonoCelular }}" class="text-primary hover:underline">{{ solicitud.TelefonoCelular }}</a>
+          {% else %}—{% endif %}
+        </span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Tel. Casa</span>
+        <span class="text-sm text-on-surface">{{ solicitud.TelefonoCasa|default:"—" }}</span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Tel. Trabajo</span>
+        <span class="text-sm text-on-surface">{{ solicitud.TelefonoTrabajo|default:"—" }}</span>
+      </div>
+    </div>
+  </div>
+
+  {# Datos del préstamo #}
+  <div class="bg-white rounded-2xl border border-outline-variant/20 overflow-hidden">
+    <div class="px-5 py-4 border-b border-outline-variant/20 flex items-center gap-2" style="background:#FFC900;">
+      <span class="material-symbols-outlined text-on-surface text-base">directions_car</span>
+      <span class="text-sm font-semibold text-on-surface">Datos del Préstamo</span>
+    </div>
+    <div class="p-5 divide-y divide-outline-variant/10">
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Tipo de Vehículo</span>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white"
+              style="background:#003FB7;">
+          {{ solicitud.TipoVehiculo|default:"—" }}
+        </span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Monto Solicitado</span>
+        <span class="text-lg font-bold text-primary">
+          {% if solicitud.MontoCreditoSolicitado %}₡{{ solicitud.MontoCreditoSolicitado|floatformat:0 }}{% else %}—{% endif %}
+        </span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Plazo</span>
+        <span class="text-sm text-on-surface">{{ solicitud.Plazo|default:"—" }} meses</span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Gastos Formalización</span>
+        {% if solicitud.GastosFormalizacion == "Sí" %}
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white bg-green-500">Sí</span>
+        {% else %}
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white bg-slate-400">No</span>
+        {% endif %}
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Fecha Entrega</span>
+        <span class="text-sm text-on-surface">{{ solicitud.FechaEntrega|default:"—" }}</span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Garantía</span>
+        <span class="text-sm text-on-surface text-right max-w-xs">{{ solicitud.Garantia|default:"—" }}</span>
+      </div>
+    </div>
+  </div>
+
+  {# Domicilio #}
+  <div class="bg-white rounded-2xl border border-outline-variant/20 overflow-hidden">
+    <div class="px-5 py-4 border-b border-outline-variant/20 flex items-center gap-2" style="background:#003FB7;">
+      <span class="material-symbols-outlined text-white text-base">home</span>
+      <span class="text-sm font-semibold text-white">Domicilio</span>
+    </div>
+    <div class="p-5 divide-y divide-outline-variant/10">
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Dirección</span>
+        <span class="text-sm text-on-surface text-right max-w-xs">{{ solicitud.DireccionDomicilio|default:"—" }}</span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Provincia</span>
+        <span class="text-sm text-on-surface">{{ solicitud.ProvinciaDomicilio|default:"—" }}</span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Cantón</span>
+        <span class="text-sm text-on-surface">{{ solicitud.CantonDomicilio|default:"—" }}</span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Distrito</span>
+        <span class="text-sm text-on-surface">{{ solicitud.DistritoDomicilio|default:"—" }}</span>
+      </div>
+    </div>
+  </div>
+
+  {# Trabajo #}
+  <div class="bg-white rounded-2xl border border-outline-variant/20 overflow-hidden">
+    <div class="px-5 py-4 border-b border-outline-variant/20 flex items-center gap-2" style="background:#FFC900;">
+      <span class="material-symbols-outlined text-on-surface text-base">business_center</span>
+      <span class="text-sm font-semibold text-on-surface">Lugar de Trabajo</span>
+    </div>
+    <div class="p-5 divide-y divide-outline-variant/10">
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Dirección</span>
+        <span class="text-sm text-on-surface text-right max-w-xs">{{ solicitud.DireccionTrabajo|default:"—" }}</span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Provincia</span>
+        <span class="text-sm text-on-surface">{{ solicitud.ProvinciaTrabajo|default:"—" }}</span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Cantón</span>
+        <span class="text-sm text-on-surface">{{ solicitud.CantonTrabajo|default:"—" }}</span>
+      </div>
+      <div class="py-3 flex justify-between gap-4">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Distrito</span>
+        <span class="text-sm text-on-surface">{{ solicitud.DistritoTrabajo|default:"—" }}</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,506 @@
+{% extends "dashboard/dashboard_base.html" %}
+{% load static %}
+{% load django_tables2 %}
+
+{% block title %}Encuesta de Satisfacción{% endblock title %}
+
+{% block breadcrumb %}
+<span>Reportes</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span>Encuestas</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span class="text-primary">Satisfacción</span>
+{% endblock breadcrumb %}
+
+{% block page_title %}Encuesta de Satisfacción{% endblock page_title %}
+
+{% block content %}
+<script src="{% static 'js/dashboard/tags_base.js' %}"></script>
+
+
+<div class="p-6 flex flex-col gap-6 h-full">
+
+    <h1 class="text-lg font-bold text-on-surface">APARTADO DE FILTROS KPI'S</h1>
+    <hr/>
+
+        <!-- Filtros KPI's -->
+    <!-- SECCIÓN 1: KPIs globales + filtro de sucursal -->
+    <section class="bg-white border border-slate-200 p-6 rounded-2xl">
+        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">
+            Apartado de KPIs Globales
+        </p>
+
+        <!-- Filtro solo de sucursal para los KPIs -->
+        <form method="GET" id="form-kpis">
+            <!-- Preservar filtros de tabla -->
+            <input type="hidden" name="agente"       value="{{ filtros.agente|default:'' }}">
+            <input type="hidden" name="unidad"       value="{{ filtros.unidad|default:'' }}">
+            <input type="hidden" name="sucursales"   value="{{ filtros.sucursal|default:'' }}">
+            <input type="hidden" name="gestion"      value="{{ filtros.gestion|default:'' }}">
+            <input type="hidden" name="nombre"       value="{{ filtros.nombre|default:'' }}">
+            <input type="hidden" name="fecha_inicio" value="{{ filtros.fecha_inicio|default:'' }}">
+            <input type="hidden" name="fecha_fin"    value="{{ filtros.fecha_fin|default:'' }}">
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+
+                <!-- Sucursal múltiple -->
+                <div class="flex flex-col gap-1 md:col-span-2">
+                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">location_on</span>
+                        Sucursal KPIs
+                    </label>
+                    <select name="kpi_sucursal" id="kpi_sucursal_select" multiple
+                        class="w-full">
+                        {% for op in opciones_sucursal %}
+                        <option value="{{ op.Sucursal }}" 
+                            {% if op.Sucursal in kpi_sucursales %}selected{% endif %}>
+                            {{ op.Sucursal }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Fecha inicio KPIs -->
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">calendar_today</span>
+                        Fecha inicio
+                    </label>
+                    <input type="date" name="kpi_fecha_inicio" 
+                        value="{{ kpi_fecha_inicio|default:'' }}"
+                        onchange="this.form.submit()"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-lg text-sm px-3 py-2 outline-none"/>
+                </div>
+
+                <!-- Fecha fin KPIs -->
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">event</span>
+                        Fecha fin
+                    </label>
+                    <input type="date" name="kpi_fecha_fin"
+                        value="{{ kpi_fecha_fin|default:'' }}"
+                        onchange="this.form.submit()"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-lg text-sm px-3 py-2 outline-none"/>
+                </div>
+
+            </div>
+        </form>
+
+        <!-- KPIs -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+            <!-- Total encuestas -->
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary flex-shrink-0">
+                    <span class="material-symbols-outlined">fact_check</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Total Encuestas</p>
+                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.total_encuestas|default:"—" }}</p>
+                </div>
+            </div>
+
+            <!-- Satisfacción en % -->
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                    <span class="material-symbols-outlined">star</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Satisfacción</p>
+                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.promedio_general|default:"—" }}%</p>
+                    <p class="text-xs text-slate-400">
+                        {% if kpi_sucursales %}{{ kpi_sucursales|join:", " }}{% else %}Todas las sucursales{% endif %}
+                    </p>
+                </div>
+            </div>
+
+            
+
+            <!-- Lealtad -->
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary flex-shrink-0">
+                    <span class="material-symbols-outlined">volunteer_activism</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Índice de Lealtad</p>
+                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.lealtad_pct|default:"—" }}%</p>
+                    <p class="text-xs text-slate-400">Recomendarían ANDE</p>
+                </div>
+            </div>
+
+            <!-- Período -->
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0">
+                    <span class="material-symbols-outlined">date_range</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Período</p>
+                    <p class="text-1xl font-black text-on-surface">
+                        {% if kpi_fecha_inicio %}{{ kpi_fecha_inicio }}{% else %}Inicio{% endif %}
+                    </p>
+                    <p class="text-1xl font-black text-on-surface">
+                        {% if kpi_fecha_fin %}{{ kpi_fecha_fin }}{% else %}Hoy{% endif %}
+                    </p>
+                </div>
+            </div>
+            <!-- Fila 2: Promotores, Pasivos, Detractores -->
+            
+
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0">
+                    <span class="material-symbols-outlined">sentiment_satisfied</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Promotores</p>
+                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.promotores_pct|default:"0" }}%</p>
+                    <p class="text-xs text-slate-400">{{ kpis_globales.promotores|default:"0" }} — Satisfecho / Muy satisfecho</p>
+                </div>
+            </div>
+
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 flex-shrink-0">
+                    <span class="material-symbols-outlined">sentiment_neutral</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Pasivos</p>
+                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.pasivos_pct|default:"0" }}%</p>
+                    <p class="text-xs text-slate-400">{{ kpis_globales.pasivos|default:"0" }} — Ni satisfecho ni insatisfecho</p>
+                </div>
+            </div>
+
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-500 flex-shrink-0">
+                    <span class="material-symbols-outlined">sentiment_dissatisfied</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Detractores</p>
+                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.detractores_pct|default:"0" }}%</p>
+                    <p class="text-xs text-slate-400">{{ kpis_globales.detractores|default:"0" }} — Poco / Nada satisfecho</p>
+                </div>
+            </div>
+
+            {% comment %} Indicador dificultad {% endcomment %}
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                    <span class="material-symbols-outlined">star</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Indicador Dificultad</p>
+                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.indicador_dificultad|default:"—" }}%</p>
+                    <p class="text-xs text-slate-400">
+                        {% if kpi_sucursales %}{{ kpi_sucursales|join:", " }}{% else %}Todas las sucursales{% endif %}
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    
+
+    <h1 class="text-lg font-bold text-on-surface">FILTRO Y DATOS DE ENCUESTAS</h1>
+    <hr/>
+
+    <!-- Filtros Tabla  -->
+    <!-- Filtros Tabla -->
+    <section class="bg-white border border-outline-variant/30 rounded-2xl overflow-hidden">
+        <form method="GET" id="form-filtros">
+
+            <!-- Header del panel de filtros -->
+            <div class="p-4 flex justify-between items-center border-b border-outline-variant/20 cursor-pointer"
+                 id="filtros-header">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">filter_alt</span>
+                    <h4 class="font-bold text-sm text-on-surface">Filtros de Búsqueda</h4>
+                    <!-- Tags de filtros activos en el header -->
+                    <div id="tag-container-header" class="flex flex-wrap gap-1 ml-2"></div>
+                </div>
+                <div class="flex items-center gap-3">
+                    {% if filtros.agente or filtros.unidad or filtros.sucursal or filtros.gestion or filtros.nombre or filtros.fecha_inicio or filtros.fecha_fin or filtros.clasificacion %}
+                    <a href="{% url 'dashboard:encuesta_satisfaccion' %}"
+                    onclick="event.stopPropagation()"
+                    class="text-xs font-bold text-red-500 hover:underline flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">close</span>
+                        Limpiar todo
+                    </a>
+                    {% endif %}
+                    <span id="filtros-chevron" class="material-symbols-outlined text-slate-400 transition-transform duration-200">
+                        expand_more
+                    </span>
+                </div>
+            </div>
+
+            <!-- Contenido colapsable -->
+            <div id="filtros-panel" class="p-6 space-y-4">
+
+                <!-- Fila 1: Operativo + Clasificación -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                    <!-- Sección Operativo -->
+                    <div class="bg-slate-50 rounded-xl p-4 space-y-3">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">tune</span>
+                            Operativo
+                        </p>
+                        <div class="space-y-2">
+                            <div class="flex flex-col gap-1">
+                                <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px]">work</span>Gestión
+                                </label>
+                                <select name="gestion"
+                                    class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none">
+                                    <option value="">Todos</option>
+                                    {% for op in opciones_gestion %}
+                                    <option value="{{ op.Gestion }}" {% if filtros.gestion == op.Gestion %}selected{% endif %}>
+                                        {{ op.Gestion }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px]">insights</span>Clasificación
+                                </label>
+                                <select name="clasificacion"
+                                    class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none"
+                                    onchange="this.form.submit()">
+                                    <option value="">Todos</option>
+                                    <option value="promotor"  {% if filtros.clasificacion == 'promotor'  %}selected{% endif %}>😊 Promotores</option>
+                                    <option value="pasivo"    {% if filtros.clasificacion == 'pasivo'    %}selected{% endif %}>😐 Pasivos</option>
+                                    <option value="detractor" {% if filtros.clasificacion == 'detractor' %}selected{% endif %}>😞 Detractores</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección Accionista -->
+                    <div class="bg-slate-50 rounded-xl p-4 space-y-3">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">person</span>
+                            Accionista
+                        </p>
+                        <div class="space-y-2">
+                            <div class="flex flex-col gap-1">
+                                <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px]">badge</span>Nombre
+                                </label>
+                                <select name="nombre"
+                                    class="w-full bg-white border border-slate-200 rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none">
+                                    <option value="">Todos</option>
+                                    {% for op in opciones_nombre %}
+                                    <option value="{{ op.Nombre }}" {% if filtros.nombre == op.Nombre %}selected{% endif %}>
+                                        {{ op.Nombre }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px]">tag</span>Cédula
+                                </label>
+                                <input type="text" name="cedula" value="{{ filtros.cedula|default:'' }}"
+                                    placeholder="Número de cédula"
+                                    onchange="this.form.submit()"
+                                    class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección Fecha -->
+                    <div class="bg-slate-50 rounded-xl p-4 space-y-3">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">date_range</span>
+                            Período
+                        </p>
+                        <div class="space-y-2">
+                            <div class="flex flex-col gap-1">
+                                <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px]">calendar_today</span>Desde
+                                </label>
+                                <input type="date" name="fecha_inicio" value="{{ filtros.fecha_inicio|default:'' }}"
+                                    onchange="this.form.submit()"
+                                    class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px]">event</span>Hasta
+                                </label>
+                                <input type="date" name="fecha_fin" value="{{ filtros.fecha_fin|default:'' }}"
+                                    onchange="this.form.submit()"
+                                    class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Fila 2: Agente -->
+                <div class="bg-slate-50 rounded-xl p-4 space-y-3">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">support_agent</span>
+                        Agente
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">person</span>Agente
+                            </label>
+                            <select name="agente"
+                                class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none">
+                                <option value="">Todos</option>
+                                {% for op in opciones_agente %}
+                                <option value="{{ op.Agente }}" {% if filtros.agente == op.Agente %}selected{% endif %}>
+                                    {{ op.Agente }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">apartment</span>Unidad
+                            </label>
+                            <select name="unidad"
+                                class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none">
+                                <option value="">Todos</option>
+                                {% for op in opciones_unidad %}
+                                <option value="{{ op.Unidad }}" {% if filtros.unidad == op.Unidad %}selected{% endif %}>
+                                    {{ op.Unidad }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">location_on</span>Sucursal
+                            </label>
+                            <select name="sucursales"
+                                class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none">
+                                <option value="">Todos</option>
+                                {% for op in opciones_sucursal %}
+                                <option value="{{ op.Sucursal }}" {% if filtros.sucursal == op.Sucursal %}selected{% endif %}>
+                                    {{ op.Sucursal }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tags activos -->
+                <div id="tag-container" class="flex flex-wrap gap-2 min-h-[28px]"></div>
+
+            </div>
+        </form>
+    </section>
+
+    <!-- Tabla -->
+    <section class="bg-surface-container-lowest rounded-2xl overflow-hidden flex-1 flex flex-col min-h-0">
+        <div class="p-6 flex justify-between items-center border-b border-surface-container flex-shrink-0">
+            <h4 class="font-headline font-bold text-lg text-on-surface">Registros de Encuesta</h4>
+            <a href="{% url 'dashboard:encuesta_satisfaccion_exportar' %}?agente={{ filtros.agente|default:'' }}&unidad={{ filtros.unidad|default:'' }}&clasificacion={{ filtros.clasificacion|default:'' }}&sucursal={{ filtros.sucursal|default:'' }}&gestion={{ filtros.gestion|default:'' }}&nombre={{ filtros.nombre|default:'' }}&fecha_inicio={{ filtros.fecha_inicio|default:'' }}&fecha_fin={{ filtros.fecha_fin|default:'' }}"
+            class="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-primary-dark transition-colors">
+                <span class="material-symbols-outlined">download</span>
+                Exportar Excel
+            </a>
+        </div>
+        {% render_table table %}
+    </section>
+
+    
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+            const filtrosPanel = document.getElementById('filtros-panel');
+            const filtrosChevron = document.getElementById('filtros-chevron');
+            const filtrosHeader = document.getElementById('filtros-header');
+
+            const hayFiltros = {% if filtros.agente or filtros.unidad or filtros.sucursal or filtros.gestion or filtros.nombre or filtros.fecha_inicio or filtros.fecha_fin or filtros.clasificacion %}true{% else %}false{% endif %};
+
+            if (!hayFiltros) {
+                filtrosPanel.style.display = 'none';
+                filtrosChevron.style.transform = 'rotate(-90deg)';
+            }
+
+            filtrosHeader.addEventListener('click', function() {
+                const isHidden = filtrosPanel.style.display === 'none';
+                filtrosPanel.style.display = isHidden ? 'block' : 'none';
+                filtrosChevron.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+            });
+        });
+</script>
+{% block scripts %}
+<script>
+   
+    $(document).ready(function() {
+        const selects = ['agente', 'unidad', 'sucursales', 'gestion', 'nombre'];
+
+        selects.forEach(function(name) {
+            $('select[name="' + name + '"]').select2({
+                placeholder: "Todos",
+                allowClear: true,
+                width: '100%',
+                minimumResultsForSearch: 0,
+                dropdownParent: $('body'),
+                dropdownCssClass: 'select2-dropdown-custom',
+                language: {
+                    noResults: function() { return "Sin resultados"; },
+                    searching: function() { return "Buscando..."; }
+                }
+            }).on('change', function() {
+                $('#form-filtros').submit();
+            });
+        });
+        $('#kpi_sucursal_select').select2({
+            placeholder: "Todas las sucursales",
+            allowClear: true,
+            width: '100%',
+            closeOnSelect: false,
+            minimumResultsForSearch: Infinity,  // ← deshabilita búsqueda
+            dropdownParent: $('body'),
+            dropdownCssClass: 'select2-dropdown-custom',
+            language: {
+                noResults: function() { return "Sin resultados"; },
+            }
+        }).on('change', function() {
+            $('#form-kpis').submit();
+        });
+        // Forzar estilos del buscador después de que Select2 renderice
+        $(document).on('select2:open', function() {
+            const searchField = document.querySelector('.select2-container--open .select2-search__field');
+            if (searchField) {
+                searchField.style.cssText = `
+                    display: block !important;
+                    width: 100% !important;
+                    padding: 6px 10px !important;
+                    border: 1px solid #c4c8dc !important;
+                    border-radius: 6px !important;
+                    font-size: 14px !important;
+                    outline: none !important;
+                    background-color: white !important;
+                    color: #191c24 !important;
+                    box-sizing: border-box !important;
+                    height: auto !important;
+                    opacity: 1 !important;
+                    visibility: visible !important;
+                `;
+            }
+        });
+
+        // Restaurar tags
+        {% if filtros.agente %}addTag("{{ filtros.agente }}");{% endif %}
+        {% if filtros.unidad %}addTag("{{ filtros.unidad }}");{% endif %}
+        {% if filtros.sucursal %}addTag("{{ filtros.sucursal }}");{% endif %}
+        {% if filtros.gestion %}addTag("{{ filtros.gestion }}");{% endif %}
+        {% if filtros.nombre %}addTag("{{ filtros.nombre }}");{% endif %}
+        {% if filtros.cedula %}addTag("Cédula: {{ filtros.cedula }}");{% endif %}
+        {% if filtros.fecha_inicio %}addTag("Desde: {{ filtros.fecha_inicio }}");{% endif %}
+        {% if filtros.fecha_fin %}addTag("Hasta: {{ filtros.fecha_fin }}");{% endif %}
+        {% if filtros.clasificacion %}addTag("{{ filtros.clasificacion|capfirst }}");{% endif %}
+        
+
+
+    });
+</script>
+{% endblock scripts %}
+{% endblock content %}

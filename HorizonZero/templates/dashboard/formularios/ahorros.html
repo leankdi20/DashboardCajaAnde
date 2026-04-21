@@ -1,0 +1,70 @@
+{% extends "dashboard/formularios_base.html" %}
+
+{% block formulario_titulo %}Ahorros{% endblock %}
+{% block formulario_page_title %}Formularios — Ahorros{% endblock %}
+
+{% block formulario_content %}
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+
+    {# 1. Depósito de salario #}
+    <a href="{% url 'dashboard:soli_deposito_salario_lista' %}"
+       class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <span class="material-symbols-outlined">savings</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Solicitud depósito de salario</p>
+            <p class="text-xs text-slate-400 mt-1">Trámite para recibir el pago de nómina directamente</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+
+    {# 2. Modificación de cuota #}
+    <a href="{% url 'dashboard:soli_ahorro_mod_cuota_lista' %}"
+       class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
+            <span class="material-symbols-outlined">tune</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Solicitud de ahorro: Modificación de cuota</p>
+            <p class="text-xs text-slate-400 mt-1">Ajuste del monto destinado a tus planes de ahorro</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+
+    {# 3. Reinversión ahorro existente #}
+    <a href="{% url 'dashboard:soli_reinversion_ahorro_lista' %}"
+       class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
+            <span class="material-symbols-outlined">currency_exchange</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Solicitud Reinversión Ahorro existente</p>
+            <p class="text-xs text-slate-400 mt-1">Gestión para reinvertir los fondos de ahorros</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+
+    {# 4. Autorización ahorro nuevo #}
+    <a href="{% url 'dashboard:soli_autorizacion_ahorro_nuevo_lista' %}"
+       class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
+            <span class="material-symbols-outlined">add_circle</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Solicitud Autorización Ahorro nuevo</p>
+            <p class="text-xs text-slate-400 mt-1">Formalización de nuevos contratos de ahorro</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+
+</div>
+{% endblock %}

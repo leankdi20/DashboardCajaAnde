@@ -1,0 +1,145 @@
+{% extends "dashboard/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}QR — {{ agente.nombre }}{% endblock %}
+
+{% block breadcrumb %}
+<span>Usuarios</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<a href="{% url 'dashboard:agentes_home' %}" class="hover:text-primary transition-colors">Agentes</a>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span class="text-primary">QR</span>
+{% endblock %}
+
+{% block page_title %}Códigos QR — {{ agente.nombre }}{% endblock %}
+
+{% block content %}
+<div class="p-6 space-y-6">
+
+  {# ── Info del agente ── #}
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-wrap items-center gap-4">
+    <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
+      <span class="text-white font-bold text-lg">{{ agente.nombre|slice:":1" }}</span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h2 class="font-bold text-slate-800 text-lg truncate">{{ agente.nombre }}</h2>
+      <div class="flex flex-wrap gap-3 mt-1">
+        <span class="inline-flex items-center gap-1.5 text-xs text-slate-500">
+          <span class="material-symbols-outlined text-[14px]">apartment</span>
+          {{ agente.unidad_nombre }}
+        </span>
+        <span class="inline-flex items-center gap-1.5 text-xs text-slate-500">
+          <span class="material-symbols-outlined text-[14px]">location_on</span>
+          {{ agente.sucursal_nombre }}
+        </span>
+        <span class="inline-flex items-center gap-1.5 text-xs text-slate-400 font-mono">
+          <span class="material-symbols-outlined text-[14px]">tag</span>
+          ID {{ agente.agente_id }}
+        </span>
+      </div>
+    </div>
+    {# Descargar ZIP con todos los QR #}
+    <a href="{% url 'dashboard:agente_qr_download_zip' agente.agente_id %}"
+       class="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors">
+      <span class="material-symbols-outlined text-[18px]">download</span>
+      Descargar todos (ZIP)
+    </a>
+    <a href="{% url 'dashboard:agentes_home' %}"
+       class="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-medium transition-colors">
+      <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+      Volver
+    </a>
+  </div>
+
+  {# ── Cards de QR por encuesta ── #}
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    {% for item in qr_data %}
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+
+      {# Header del card #}
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+          <span class="material-symbols-outlined text-primary text-[16px]">qr_code_2</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-slate-800 truncate">{{ item.nombre }}</p>
+          <p class="text-xs text-slate-400">Encuesta ID: {{ item.encuesta_id }}</p>
+        </div>
+      </div>
+
+      {# QR Image #}
+      <div class="flex-1 flex flex-col items-center justify-center p-6 gap-4">
+        <div class="p-3 rounded-2xl border-2 border-slate-100 bg-white shadow-inner">
+          <img src="data:image/png;base64,{{ item.qr_b64 }}"
+               alt="QR {{ item.nombre }}"
+               class="w-48 h-48 object-contain">
+        </div>
+
+        {# URL encapsulada #}
+        <div class="w-full">
+          <p class="text-xs text-slate-400 mb-1 text-center font-medium">URL encapsulada</p>
+          <div class="bg-slate-50 rounded-lg px-3 py-2 flex items-center gap-2">
+            <code class="text-xs text-slate-600 flex-1 truncate">{{ item.url }}</code>
+            <button onclick="copiarURL('{{ item.url }}', this)"
+                    class="flex-shrink-0 text-slate-400 hover:text-primary transition-colors"
+                    title="Copiar URL">
+              <span class="material-symbols-outlined text-[16px]">content_copy</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {# Footer con descarga #}
+      <div class="px-5 py-4 border-t border-slate-100">
+        <a href="{% url 'dashboard:agente_qr_download' agente.agente_id item.encuesta_id %}"
+           class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-primary hover:text-white rounded-xl text-sm font-medium transition-colors">
+          <span class="material-symbols-outlined text-[18px]">download</span>
+          Descargar PNG
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# ── Instrucciones de uso ── #}
+  <div class="bg-blue-50 border border-blue-200 rounded-2xl p-5">
+    <div class="flex items-start gap-3">
+      <span class="material-symbols-outlined text-blue-500 text-[22px] mt-0.5">info</span>
+      <div class="space-y-2">
+        <p class="text-sm font-semibold text-blue-700">¿Cómo usar estos QR?</p>
+        <ul class="text-xs text-blue-600 space-y-1 list-disc list-inside">
+          <li>Cada QR está vinculado al agente <strong>{{ agente.nombre }}</strong> (ID: {{ agente.agente_id }})</li>
+          <li>Al escanearlo, el accionista accede directamente a la encuesta correspondiente</li>
+          <li>Las respuestas quedarán registradas con el ID de este agente</li>
+          <li>Imprimí el QR y colocalo en el puesto de atención del agente</li>
+          <li>Si el agente cambia de unidad o sucursal, el QR sigue siendo válido — solo actualizá sus datos</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# Toast de copiado #}
+<div id="toast-copy"
+     class="fixed bottom-6 right-6 z-50 hidden items-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-sm shadow-lg">
+  <span class="material-symbols-outlined text-[16px] text-green-400">check_circle</span>
+  URL copiada al portapapeles
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copiarURL(url, btn) {
+  navigator.clipboard.writeText(url).then(() => {
+    const toast = document.getElementById('toast-copy');
+    toast.classList.remove('hidden');
+    toast.classList.add('flex');
+    setTimeout(() => {
+      toast.classList.add('hidden');
+      toast.classList.remove('flex');
+    }, 2500);
+  });
+}
+</script>
+{% endblock %}

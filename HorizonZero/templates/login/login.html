@@ -1,0 +1,108 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Caja de Ande - Iniciar Sesión</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+    <link rel="stylesheet" href="{% static 'css/login/login.css' %}">
+    <script src="{% static 'js/login/tailwind.js' %}"></script>
+
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex flex-col lg:flex-row min-h-screen">
+    <div class="hidden lg:block lg:w-3/5 relative overflow-hidden">
+        <img class="bg-image img_edificio" src="{% static 'img/login/Edificio.jpg' %}" alt="">
+        <div class="absolute inset-0 bg-gradient-to-tr from-blue-900/40 to-transparent"></div>
+        <div class="absolute inset-0 glass-overlay opacity-30"></div>
+        <div class="absolute bottom-12 left-12 max-w-lg z-10 text-white">
+            <h1 class="text-5xl font-bold leading-tight mb-4 drop-shadow-lg">Panel de control</h1>
+            <p class="text-xl opacity-90 drop-shadow-md">Información clara y actualizada para el análisis y la gestión diaria.</p>
+        </div>
+        <div class="absolute top-12 left-12 z-10">
+            <div class="flex items-center space-x-2 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20">
+                <div class="flex flex-col items-center">
+                    <span class="text-accent text-2xl font-black">▲</span>
+                    <span class="text-primary text-2xl font-black -mt-3">▼</span>
+                </div>
+                <span class="text-white font-bold text-xl tracking-tighter">CAJA DE ANDE</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="w-full lg:w-2/5 flex flex-col justify-center items-center px-8 py-12 bg-background-light dark:bg-background-dark">
+        <div class="w-full max-w-md">
+            <div class="mb-12 text-center">
+                <div class="inline-flex flex-col items-center mb-4">
+                    <img class="img_logo" src="{% static 'img/login/LogoCA.png' %}" alt="logoCAJAANDE">
+                </div>
+            </div>
+
+            {% if messages %}
+                <div class="mb-6 space-y-2">
+                    {% for message in messages %}
+                        <div class="rounded-lg px-4 py-3 text-sm font-medium
+                            {% if message.tags == 'error' %}
+                                bg-red-100 text-red-700
+                            {% else %}
+                                bg-blue-100 text-blue-700
+                            {% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="POST" action="{% url 'usuarios:login' %}" class="space-y-6">
+                {% csrf_token %}
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2" for="usuario">Usuario</label>
+                    <div class="relative">
+                        <span class="material-icons absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">person</span>
+                        {{ form.usuario }}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2" for="password">Contraseña</label>
+                    <div class="relative">
+                        <span class="material-icons absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">lock</span>
+                        {{ form.password }}
+
+                        <button
+                            type="button"
+                            onclick="togglePassword()"
+                            class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary"
+                        >
+                            <span id="eyeIcon" class="material-icons">visibility_off</span>
+                        </button>
+
+                    </div>
+                </div>
+
+          
+
+                <button class="w-full bg-primary hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all active:scale-[0.98] flex items-center justify-center space-x-2" type="submit">
+                    <span>Ingresar</span>
+                    <span class="material-icons text-sm">arrow_forward</span>
+                </button>
+            </form>
+
+            
+
+            <div class="mt-12 text-center text-xs text-slate-400">
+                © 2026 Caja de Ande. Todos los derechos reservados.
+            </div>
+        </div>
+    </div>
+</div>
+
+<button class="fixed bottom-6 right-6 p-3 bg-white dark:bg-slate-800 rounded-full shadow-2xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:scale-110 transition-transform z-50" onclick="document.documentElement.classList.toggle('dark')">
+    <span class="material-icons">dark_mode</span>
+</button>
+</body>
+</html>

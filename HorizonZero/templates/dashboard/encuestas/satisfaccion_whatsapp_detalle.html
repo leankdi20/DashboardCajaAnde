@@ -1,0 +1,90 @@
+{% extends "dashboard/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Detalle WhatsApp Agente{% endblock %}
+
+{% block breadcrumb %}
+<span>Reportes</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span>Encuestas</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<a href="{% url 'dashboard:encuesta_whatsapp_agente' %}" class="hover:text-primary">WhatsApp Agente</a>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span class="text-primary">Detalle</span>
+{% endblock %}
+
+{% block page_title %}Detalle de Encuesta{% endblock %}
+
+{% block content %}
+<div class="p-8 space-y-8">
+
+    <!-- Info general -->
+    <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-1">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Fecha</label>
+            <p class="bg-surface-container-highest/50 rounded-lg py-2.5 px-4 text-sm font-medium">{{ encabezado.Fecha }}</p>
+        </div>
+    </div>
+
+    <!-- Accionista -->
+    <div class="bg-surface-container-low rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center shadow-sm">
+        <div class="flex-1 w-full space-y-1.5">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Nombre Accionista</label>
+            <p class="bg-white rounded-lg py-3 px-4 text-sm font-medium shadow-sm">{{ encabezado.Nombre|default:"—" }}</p>
+        </div>
+        <div class="flex-1 w-full space-y-1.5">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500"># Cédula</label>
+            <p class="bg-white rounded-lg py-3 px-4 text-sm font-medium shadow-sm">{{ encabezado.Cedula|default:"—" }}</p>
+        </div>
+        <div class="flex-1 w-full space-y-1.5">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Hora</label>
+            <p class="bg-white rounded-lg py-3 px-4 text-sm font-medium shadow-sm">{{ encabezado.Hora|default:"—" }}</p>
+        </div>
+    </div>
+
+    <!-- Preguntas -->
+    <div class="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/10">
+        <div class="bg-primary p-4 flex justify-between items-center">
+            <h3 class="text-white font-bold text-sm tracking-wide">Preguntas de la Encuesta</h3>
+            <span class="text-[10px] text-white/70 font-bold uppercase">Evaluación</span>
+        </div>
+        <div class="divide-y divide-outline-variant/10">
+            {% for fila in preguntas %}
+            <div class="p-5 flex justify-between items-center hover:bg-surface-container-low/30 transition-colors">
+                <p class="text-sm font-medium text-on-surface">{{ fila.Pregunta }}</p>
+                <span class="inline-flex items-center bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ml-6">
+                    {{ fila.Respuesta }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10 flex flex-col gap-2">
+            <div class="w-10 h-10 rounded-lg bg-tertiary/10 flex items-center justify-center text-tertiary mb-2">
+                <span class="material-symbols-outlined">receipt_long</span>
+            </div>
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Promedio Esta Encuesta</p>
+            <p class="text-3xl font-black text-on-surface">{{ kpis.promedio_encuesta }}%</p>
+            <p class="text-xs text-slate-400">Solo esta visita</p>
+        </div>
+    </div>
+
+    <!-- Botones -->
+    <div class="pb-8 flex justify-between items-center">
+        <a href="{% url 'dashboard:encuesta_whatsapp_agente' %}"
+        class="inline-flex items-center gap-2 text-primary text-sm font-bold hover:underline">
+            <span class="material-symbols-outlined text-lg">arrow_back</span>
+            Volver a la lista
+        </a>
+        <a href="{% url 'dashboard:encuesta_whatsapp_detalle_exportar' respuesta_id=respuesta_id %}"
+        class="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-primary-dark transition-colors">
+            <span class="material-symbols-outlined">download</span>
+            Exportar Excel
+        </a>
+    </div>
+
+</div>
+{% endblock %}

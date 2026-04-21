@@ -1,0 +1,79 @@
+{% extends "dashboard/formularios_base.html" %}
+
+{% block formulario_titulo %}Tarjetas{% endblock %}
+{% block formulario_page_title %}Formularios — Tarjetas{% endblock %}
+
+{% block formulario_content %}
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+
+    <a href="{% url 'dashboard:soli_tarj_credito_lista' %}"
+       class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <span class="material-symbols-outlined">credit_score</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Solicitud de gestión de tarjetas de crédito</p>
+            <p class="text-xs text-slate-400 mt-1">Gestión y administración de tarjetas de crédito</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+
+    <a href="{% url 'dashboard:soli_tarj_debito_lista' %}"
+       class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
+            <span class="material-symbols-outlined">star</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Solicitud de tarjeta Ciudadano de Oro</p>
+            <p class="text-xs text-slate-400 mt-1">Solicitud de tarjeta especial Ciudadano de Oro</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+
+    <a href="{% url 'dashboard:soli_tarj_debito_gestion_lista' %}"
+       class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
+            <span class="material-symbols-outlined">credit_card</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Solicitud de gestión de tarjetas de débito</p>
+            <p class="text-xs text-slate-400 mt-1">Gestión y administración de tarjetas de débito</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+    <a href="{% url 'dashboard:soli_redencion_puntos_lista' %}"
+        class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary">
+            <span class="material-symbols-outlined">redeem</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Solicitud para redención de puntos</p>
+            <p class="text-xs text-slate-400 mt-1">Redención de puntos acumulados en tarjetas</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+
+    <a href="{% url 'dashboard:caja_ande_asistencia_lista' %}"
+        class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
+            <span class="material-symbols-outlined">support_agent</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Caja de ANDE Asistencia</p>
+            <p class="text-xs text-slate-400 mt-1">Solicitudes relacionadas con caja de asistencia</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+
+</div>
+{% endblock %}

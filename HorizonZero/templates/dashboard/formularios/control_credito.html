@@ -1,0 +1,40 @@
+{% extends "dashboard/formularios_base.html" %}
+ 
+{% block formulario_titulo %}Control de Crédito{% endblock %}
+{% block formulario_page_title %}Formularios — Control de Crédito{% endblock %}
+ 
+{% block formulario_content %}
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+ 
+    {# 1. Comprobante autorización ahorro #}
+    <a href="{% url 'dashboard:comprobante_autorizacion_ahorro_lista' %}"
+       class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <span class="material-symbols-outlined">receipt_long</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Comprobante de transacciones de pagos: Autorización para tomar del ahorro voluntario</p>
+            <p class="text-xs text-slate-400 mt-1">Comprobantes de autorización sobre ahorro voluntario</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+ 
+    {# 2. Comprobantes pago depósitos bancarios #}
+    <a href="{% url 'dashboard:comprobantes_pago_lista' %}"
+       class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
+            <span class="material-symbols-outlined">account_balance</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Comprobante de transacciones de pagos: Depósitos bancarios</p>
+            <p class="text-xs text-slate-400 mt-1">Comprobantes de depósitos bancarios realizados</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+ 
+</div>
+{% endblock %}

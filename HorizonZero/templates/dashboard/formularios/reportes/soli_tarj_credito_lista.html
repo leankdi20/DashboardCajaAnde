@@ -1,0 +1,345 @@
+{% extends "dashboard/formularios_base.html" %}
+{% load django_tables2 %}
+
+{% block formulario_content %}
+
+{# ── Encabezado ──────────────────────────────────────────────── #}
+<div class="flex items-start justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-on-surface tracking-tight">
+      Solicitud de Tarjeta de Crédito
+    </h1>
+  </div>
+  <a href="{% url 'dashboard:soli_tarj_credito_export' %}?{{ request.GET.urlencode }}"
+     class="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold
+            hover:bg-primary/90 transition-colors">
+    <span class="material-symbols-outlined text-base">download</span>
+    Exportar Excel
+  </a>
+</div>
+
+{# ── KPI Cards ───────────────────────────────────────────────── #}
+
+{# Fila 1: Total destacado #}
+<div class="mb-4">
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+         style="background:#003FB7;">
+      <span class="material-symbols-outlined text-white">credit_card</span>
+    </div>
+    <div>
+      <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Total Solicitudes</span>
+      <p class="text-4xl font-bold text-primary">{{ kpis.total_solicitudes|default:"0" }}</p>
+      <span class="text-xs text-on-surface-variant">registros en la vista</span>
+    </div>
+  </div>
+</div>
+
+{# Fila 2: Por tipo de trámite #}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-4 flex flex-col gap-1">
+    <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Tarjeta Nueva</span>
+    <span class="text-2xl font-bold text-on-surface">{{ kpis.total_nuevas|default:"0" }}</span>
+    <span class="text-xs text-on-surface-variant">Pre-solicitud tarjeta nueva</span>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-4 flex flex-col gap-1">
+    <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Renovación</span>
+    <span class="text-2xl font-bold text-on-surface">{{ kpis.total_renovacion|default:"0" }}</span>
+    <span class="text-xs text-on-surface-variant">Renovación de tarjeta de crédito</span>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-4 flex flex-col gap-1">
+    <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Estado de Cuenta</span>
+    <span class="text-2xl font-bold text-on-surface">{{ kpis.total_estado_cuenta|default:"0" }}</span>
+    <span class="text-xs text-on-surface-variant">Estado de cuenta tarjeta</span>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-4 flex flex-col gap-1">
+    <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Ampliación</span>
+    <span class="text-2xl font-bold text-on-surface">{{ kpis.total_ampliacion|default:"0" }}</span>
+    <span class="text-xs text-on-surface-variant">Ampliación de límite de crédito</span>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-4 flex flex-col gap-1">
+    <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Compra de Saldos</span>
+    <span class="text-2xl font-bold text-on-surface">{{ kpis.total_compra_saldos|default:"0" }}</span>
+    <span class="text-xs text-on-surface-variant">Compra de saldos de tarjetas</span>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-4 flex flex-col gap-1">
+    <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Reposición</span>
+    <span class="text-2xl font-bold text-on-surface">{{ kpis.total_reposicion|default:"0" }}</span>
+    <span class="text-xs text-on-surface-variant">Reposición por deterioro</span>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-4 flex flex-col gap-1">
+    <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Reclamos</span>
+    <span class="text-2xl font-bold text-on-surface">{{ kpis.total_reclamos|default:"0" }}</span>
+    <span class="text-xs text-on-surface-variant">Reclamos de tarjeta</span>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-outline-variant/20 p-4 flex flex-col gap-1">
+    <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Saldo sin Tarjeta</span>
+    <span class="text-2xl font-bold text-on-surface">{{ kpis.total_saldo_sin_tarjeta|default:"0" }}</span>
+    <span class="text-xs text-on-surface-variant">Compra saldos sin tarjeta activa</span>
+  </div>
+
+</div>
+
+{# ── Filtros ─────────────────────────────────────────────────── #}
+<section class="bg-white border border-outline-variant/30 rounded-2xl overflow-hidden mb-6">
+  <form method="GET" id="form-filtros">
+
+    {# Header colapsable #}
+    <div class="p-4 flex justify-between items-center border-b border-outline-variant/20 cursor-pointer"
+         id="filtros-header">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary">filter_alt</span>
+        <h4 class="font-bold text-sm text-on-surface">Filtros de Búsqueda</h4>
+        {% if filtros %}
+        <span class="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+          {{ filtros|length }} activo{% if filtros|length != 1 %}s{% endif %}
+        </span>
+        {% endif %}
+      </div>
+      <div class="flex items-center gap-3">
+        {% if filtros %}
+        <a href="{% url 'dashboard:soli_tarj_credito_lista' %}"
+           onclick="event.stopPropagation()"
+           class="text-xs font-bold text-red-500 hover:underline flex items-center gap-1">
+          <span class="material-symbols-outlined text-[14px]">close</span>
+          Limpiar todo
+        </a>
+        {% endif %}
+        <span id="filtros-chevron"
+              class="material-symbols-outlined text-slate-400 transition-transform duration-200">
+          expand_more
+        </span>
+      </div>
+    </div>
+
+    {# Panel #}
+    <div id="filtros-panel" class="p-6 space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        {# ── ACCIONISTA ──────────────────────────── #}
+        <div class="bg-slate-50 rounded-xl p-4 space-y-3">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">person</span>Accionista
+          </p>
+
+          {# Cédula — Select2 AJAX #}
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">badge</span>Cédula
+            </label>
+            <select name="cedula" id="sel-cedula" class="w-full ajax-select2"
+                    data-campo="cedula"
+                    data-url="{% url 'dashboard:soli_tarj_credito_buscar' 'cedula' %}"
+                    data-selected="{{ filtros.cedula|default:'' }}">
+              {% if filtros.cedula %}
+              <option value="{{ filtros.cedula }}" selected>{{ filtros.cedula }}</option>
+              {% endif %}
+            </select>
+          </div>
+
+          {# Nombre — Select2 AJAX #}
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">person</span>Nombre
+            </label>
+            <select name="nombre" id="sel-nombre" class="w-full ajax-select2"
+                    data-campo="nombre"
+                    data-url="{% url 'dashboard:soli_tarj_credito_buscar' 'nombre' %}"
+                    data-selected="{{ filtros.nombre|default:'' }}">
+              {% if filtros.nombre %}
+              <option value="{{ filtros.nombre }}" selected>{{ filtros.nombre }}</option>
+              {% endif %}
+            </select>
+          </div>
+
+          {# Teléfono — Select2 AJAX #}
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">call</span>Teléfono
+            </label>
+            <select name="telefono" id="sel-telefono" class="w-full ajax-select2"
+                    data-campo="telefono"
+                    data-url="{% url 'dashboard:soli_tarj_credito_buscar' 'telefono' %}"
+                    data-selected="{{ filtros.telefono|default:'' }}">
+              {% if filtros.telefono %}
+              <option value="{{ filtros.telefono }}" selected>{{ filtros.telefono }}</option>
+              {% endif %}
+            </select>
+          </div>
+
+          {# Correo — Select2 AJAX #}
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">mail</span>Correo
+            </label>
+            <select name="correo" id="sel-correo" class="w-full ajax-select2"
+                    data-campo="correo"
+                    data-url="{% url 'dashboard:soli_tarj_credito_buscar' 'correo' %}"
+                    data-selected="{{ filtros.correo|default:'' }}">
+              {% if filtros.correo %}
+              <option value="{{ filtros.correo }}" selected>{{ filtros.correo }}</option>
+              {% endif %}
+            </select>
+          </div>
+        </div>
+
+        {# ── TRÁMITE ─────────────────────────────── #}
+        <div class="bg-slate-50 rounded-xl p-4 space-y-3">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">credit_card</span>Trámite
+          </p>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">list_alt</span>Tipo de Trámite
+            </label>
+            <select name="tipo_tramite" class="w-full static-select2">
+              <option value="">Todos</option>
+              {% for t in tramites %}
+              <option value="{{ t.TipoTramite }}"
+                {% if filtros.tipo_tramite == t.TipoTramite %}selected{% endif %}>
+                {{ t.TipoTramite }} ({{ t.total }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        {# ── PERÍODO ─────────────────────────────── #}
+        <div class="bg-slate-50 rounded-xl p-4 space-y-3">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">date_range</span>Período
+          </p>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">calendar_today</span>Desde
+            </label>
+            <input type="date" name="fecha_inicio"
+                   value="{{ filtros.fecha_inicio|default:'' }}"
+                   onchange="this.form.submit()"
+                   class="w-full bg-white border border-outline-variant rounded-lg text-sm
+                          px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none">
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">event</span>Hasta
+            </label>
+            <input type="date" name="fecha_fin"
+                   value="{{ filtros.fecha_fin|default:'' }}"
+                   onchange="this.form.submit()"
+                   class="w-full bg-white border border-outline-variant rounded-lg text-sm
+                          px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none">
+          </div>
+        </div>
+
+      </div>
+    </div>{# /filtros-panel #}
+  </form>
+</section>
+
+{# ── Tabla ───────────────────────────────────────────────────── #}
+<section class="bg-white rounded-2xl border border-outline-variant/20 overflow-hidden">
+  {% render_table table %}
+</section>
+
+{# ── Scripts ─────────────────────────────────────────────────── #}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const panel   = document.getElementById('filtros-panel');
+    const chevron = document.getElementById('filtros-chevron');
+    const header  = document.getElementById('filtros-header');
+    const hayFiltros = {{ filtros|length }} > 0;
+
+    if (!hayFiltros) {
+      panel.style.display = 'none';
+      chevron.style.transform = 'rotate(-90deg)';
+    }
+    header.addEventListener('click', function () {
+      const oculto = panel.style.display === 'none';
+      panel.style.display = oculto ? 'block' : 'none';
+      chevron.style.transform = oculto ? 'rotate(0deg)' : 'rotate(-90deg)';
+    });
+  });
+</script>
+
+{% block scripts %}
+<script>
+$(document).ready(function () {
+
+  // ── Select2 con AJAX (cédula, nombre, teléfono, correo) ──────
+  $('.ajax-select2').each(function () {
+    const $el  = $(this);
+    const url  = $el.data('url');
+
+    $el.select2({
+      placeholder:    "Escribir para buscar...",
+      allowClear:     true,
+      width:          '100%',
+      minimumInputLength: 1,          // ← empieza a buscar desde 1 carácter
+      dropdownParent: $('body'),
+      dropdownCssClass: 'select2-dropdown-custom',
+      language: {
+        noResults:    function () { return "Sin resultados"; },
+        searching:    function () { return "Buscando..."; },
+        inputTooShort: function () { return "Escribí al menos 1 carácter"; }
+      },
+      ajax: {
+        url:      url,
+        dataType: 'json',
+        delay:    300,                // espera 300ms después de escribir
+        data: function (params) {
+          return { term: params.term || '' };
+        },
+        processResults: function (data) {
+          return { results: data.results };
+        },
+        cache: true
+      }
+    }).on('change', function () {
+      $('#form-filtros').submit();
+    });
+  });
+
+  // ── Select2 estático (tipo de trámite) ───────────────────────
+  $('.static-select2').select2({
+    placeholder:      "Todos",
+    allowClear:       true,
+    width:            '100%',
+    dropdownParent:   $('body'),
+    dropdownCssClass: 'select2-dropdown-custom',
+    language: {
+      noResults: function () { return "Sin resultados"; }
+    }
+  }).on('change', function () {
+    $('#form-filtros').submit();
+  });
+
+  // ── Fix estilos del buscador ─────────────────────────────────
+  $(document).on('select2:open', function () {
+    const sf = document.querySelector(
+      '.select2-container--open .select2-search__field'
+    );
+    if (sf) {
+      sf.style.cssText = `
+        display:block!important;width:100%!important;
+        padding:6px 10px!important;border:1px solid #c4c8dc!important;
+        border-radius:6px!important;font-size:14px!important;
+        outline:none!important;background-color:white!important;
+        color:#191c24!important;box-sizing:border-box!important;
+        height:auto!important;opacity:1!important;visibility:visible!important;
+      `;
+    }
+  });
+
+});
+</script>
+{% endblock scripts %}
+
+{% endblock %}

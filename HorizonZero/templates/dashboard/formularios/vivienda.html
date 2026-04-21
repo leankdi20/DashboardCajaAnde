@@ -1,0 +1,55 @@
+{% extends "dashboard/formularios_base.html" %}
+
+{% block formulario_titulo %}Vivienda{% endblock %}
+{% block formulario_page_title %}Formularios — Vivienda{% endblock %}
+
+{% block formulario_content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+    {# 1. Préstamo de vehículo #}
+    <a href="{% url "dashboard:soli_compra_vehiculo_lista" %}"
+       class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <span class="material-symbols-outlined">directions_car</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Préstamo de vehículo</p>
+            <p class="text-xs text-slate-400 mt-1">Gestión para la adquisición de vehículo nuevo o usado</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+
+    {# 2. Préstamo para vivienda #}
+    <a href="{% url "dashboard:soli_prestamo_vivienda_lista" %}"
+       class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
+            <span class="material-symbols-outlined">home</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Préstamo para vivienda</p>
+            <p class="text-xs text-slate-400 mt-1">Soluciones hipotecarias — Trámite de crédito</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+
+    {# 3. Préstamo Desarrollo Económico #}
+    <a href="{% url "dashboard:soli_prestamo_desarrollo_lista" %}"
+       class="bg-white border border-outline-variant/20 rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-20 h-20 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
+            <span class="material-symbols-outlined">trending_up</span>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-bold text-on-surface">Préstamo Desarrollo Económico</p>
+            <p class="text-xs text-slate-400 mt-1">Financiamiento diseñado para fortalecer proyectos</p>
+        </div>
+        <div class="flex justify-end">
+            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </div>
+    </a>
+
+</div>
+{% endblock %}

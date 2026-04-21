@@ -1,0 +1,301 @@
+{% extends "dashboard/dashboard_base.html" %}
+{% load static %}
+{% load django_tables2 %}
+
+{% block title %}Encuesta WhatsApp Agente{% endblock title %}
+
+{% block breadcrumb %}
+<span>Reportes</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span>Encuestas</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span class="text-primary">WhatsApp Agente</span>
+{% endblock breadcrumb %}
+
+{% block page_title %}Encuesta de Satisfacción WhatsApp Agente{% endblock page_title %}
+
+{% block content %}
+
+
+<div class="p-6 flex flex-col gap-6 h-full">
+
+    <!-- KPIs Globales -->
+    <section class="bg-white border border-slate-200 p-6 rounded-2xl">
+        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">KPIs Globales</p>
+
+        <form method="GET" id="form-kpis">
+            <input type="hidden" name="agente"       value="{{ filtros.agente|default:'' }}">
+            <input type="hidden" name="nombre"       value="{{ filtros.nombre|default:'' }}">
+            <input type="hidden" name="cedula"       value="{{ filtros.cedula|default:'' }}">
+            <input type="hidden" name="clasificacion" value="{{ filtros.clasificacion|default:'' }}">
+            <input type="hidden" name="fecha_inicio" value="{{ filtros.fecha_inicio|default:'' }}">
+            <input type="hidden" name="fecha_fin"    value="{{ filtros.fecha_fin|default:'' }}">
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="flex flex-col gap-1 md:col-span-2">
+                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">person</span>
+                        Agente KPIs
+                    </label>
+                    <select name="kpi_agente" id="kpi_agente_select" multiple class="w-full">
+                        {% for op in opciones_agente %}
+                        <option value="{{ op.Agente }}"
+                            {% if op.Agente in kpi_agentes %}selected{% endif %}>
+                            {{ op.Agente }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">calendar_today</span>
+                        Fecha inicio
+                    </label>
+                    <input type="date" name="kpi_fecha_inicio"
+                        value="{{ kpi_fecha_inicio|default:'' }}"
+                        onchange="this.form.submit()"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-lg text-sm px-3 py-2 outline-none"/>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">event</span>
+                        Fecha fin
+                    </label>
+                    <input type="date" name="kpi_fecha_fin"
+                        value="{{ kpi_fecha_fin|default:'' }}"
+                        onchange="this.form.submit()"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-lg text-sm px-3 py-2 outline-none"/>
+                </div>
+            </div>
+        </form>
+
+        <!-- Cards KPIs -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                    <span class="material-symbols-outlined">star</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Satisfacción</p>
+                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.promedio_general|default:"—" }}%</p>
+                    <p class="text-xs text-slate-400">{% if kpi_agentes %}{{ kpi_agentes|join:", " }}{% else %}Todos los agentes{% endif %}</p>
+                </div>
+            </div>
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary flex-shrink-0">
+                    <span class="material-symbols-outlined">fact_check</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Total Encuestas</p>
+                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.total_encuestas|default:"—" }}</p>
+                </div>
+            </div>
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0">
+                    <span class="material-symbols-outlined">date_range</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Período</p>
+                    <p class="text-sm font-black text-on-surface">{% if kpi_fecha_inicio %}{{ kpi_fecha_inicio }}{% else %}Inicio{% endif %}</p>
+                    <p class="text-sm font-black text-on-surface">{% if kpi_fecha_fin %}{{ kpi_fecha_fin }}{% else %}Hoy{% endif %}</p>
+                </div>
+            </div>
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-whatsapp/10 flex items-center justify-center flex-shrink-0" style="background-color: #e7f8ee;">
+                    <span class="material-symbols-outlined" style="color: #25d366;">chat</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Canal</p>
+                    <p class="text-sm font-black text-on-surface">WhatsApp</p>
+                    <p class="text-xs text-slate-400">Con agente</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Promotores / Pasivos / Detractores -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0">
+                    <span class="material-symbols-outlined">sentiment_satisfied</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Promotores</p>
+                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.promotores_pct|default:"0" }}%</p>
+                    <p class="text-xs text-slate-400">{{ kpis_globales.promotores|default:"0" }} — Puntaje 4-5</p>
+                </div>
+            </div>
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 flex-shrink-0">
+                    <span class="material-symbols-outlined">sentiment_neutral</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Pasivos</p>
+                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.pasivos_pct|default:"0" }}%</p>
+                    <p class="text-xs text-slate-400">{{ kpis_globales.pasivos|default:"0" }} — Puntaje 3</p>
+                </div>
+            </div>
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-500 flex-shrink-0">
+                    <span class="material-symbols-outlined">sentiment_dissatisfied</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Detractores</p>
+                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.detractores_pct|default:"0" }}%</p>
+                    <p class="text-xs text-slate-400">{{ kpis_globales.detractores|default:"0" }} — Puntaje 1-2</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filtros Tabla -->
+    <section class="bg-white border border-outline-variant/30 p-6 rounded-2xl">
+        <form method="GET" id="form-filtros">
+            <input type="hidden" name="kpi_fecha_inicio" value="{{ kpi_fecha_inicio|default:'' }}">
+            <input type="hidden" name="kpi_fecha_fin"    value="{{ kpi_fecha_fin|default:'' }}">
+            {% for a in kpi_agentes %}<input type="hidden" name="kpi_agente" value="{{ a }}">{% endfor %}
+
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">person</span>Agente
+                    </label>
+                    <select name="agente"
+                        class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none">
+                        <option value="">Todos</option>
+                        {% for op in opciones_agente %}
+                        <option value="{{ op.Agente }}" {% if filtros.agente == op.Agente %}selected{% endif %}>
+                            {{ op.Agente }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">badge</span>Accionista
+                    </label>
+                    <select name="nombre"
+                        class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none">
+                        <option value="">Todos</option>
+                        {% for op in opciones_nombre %}
+                        <option value="{{ op.Nombre }}" {% if filtros.nombre == op.Nombre %}selected{% endif %}>
+                            {{ op.Nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">tag</span>Cédula
+                    </label>
+                    <input type="text" name="cedula" value="{{ filtros.cedula|default:'' }}"
+                        placeholder="Número de cédula"
+                        onchange="this.form.submit()"
+                        class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">insights</span>Clasificación
+                    </label>
+                    <select name="clasificacion"
+                        class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none"
+                        onchange="this.form.submit()">
+                        <option value="">Todos</option>
+                        <option value="promotor"  {% if filtros.clasificacion == 'promotor'  %}selected{% endif %}>Promotores</option>
+                        <option value="pasivo"    {% if filtros.clasificacion == 'pasivo'    %}selected{% endif %}>Pasivos</option>
+                        <option value="detractor" {% if filtros.clasificacion == 'detractor' %}selected{% endif %}>Detractores</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">calendar_today</span>Fecha inicio
+                    </label>
+                    <input type="date" name="fecha_inicio" value="{{ filtros.fecha_inicio|default:'' }}"
+                        onchange="this.form.submit()"
+                        class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">event</span>Fecha fin
+                    </label>
+                    <input type="date" name="fecha_fin" value="{{ filtros.fecha_fin|default:'' }}"
+                        onchange="this.form.submit()"
+                        class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
+                </div>
+
+            </div>
+        </form>
+
+        <div id="tag-container" class="flex flex-wrap gap-2 pt-3 mt-2 border-t border-outline-variant/20 min-h-[32px]"></div>
+
+        {% if filtros.agente or filtros.nombre or filtros.cedula or filtros.clasificacion or filtros.fecha_inicio or filtros.fecha_fin %}
+        <div class="pt-2 mt-2">
+            <a href="{% url 'dashboard:encuesta_whatsapp_agente' %}"
+               class="text-primary text-xs font-bold hover:underline">Limpiar filtros</a>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Tabla -->
+    <section class="bg-surface-container-lowest rounded-2xl overflow-hidden flex-1 flex flex-col min-h-0">
+        <div class="p-6 flex justify-between items-center border-b border-surface-container flex-shrink-0">
+            <h4 class="font-headline font-bold text-lg text-on-surface">Registros de Encuesta</h4>
+            <a href="{% url 'dashboard:encuesta_whatsapp_agente_exportar' %}?agente={{ filtros.agente|default:'' }}&nombre={{ filtros.nombre|default:'' }}&cedula={{ filtros.cedula|default:'' }}&fecha_inicio={{ filtros.fecha_inicio|default:'' }}&fecha_fin={{ filtros.fecha_fin|default:'' }}"
+               class="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-primary-dark transition-colors">
+                <span class="material-symbols-outlined">download</span>
+                Exportar Excel
+            </a>
+        </div>
+        {% render_table table %}
+    </section>
+
+</div>
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    const selects = ['agente', 'nombre'];
+    selects.forEach(function(name) {
+        $('select[name="' + name + '"]').select2({
+            placeholder: "Todos",
+            allowClear: true,
+            width: '100%',
+            minimumResultsForSearch: 0,
+            dropdownParent: $('body'),
+            dropdownCssClass: 'select2-dropdown-custom',
+            language: { noResults: function() { return "Sin resultados"; }, searching: function() { return "Buscando..."; } }
+        }).on('change', function() { $('#form-filtros').submit(); });
+    });
+
+    $('#kpi_agente_select').select2({
+        placeholder: "Todos los agentes",
+        allowClear: true,
+        width: '100%',
+        closeOnSelect: false,
+        minimumResultsForSearch: Infinity,
+        dropdownParent: $('body'),
+        dropdownCssClass: 'select2-dropdown-custom',
+        language: { noResults: function() { return "Sin resultados"; } }
+    }).on('change', function() { $('#form-kpis').submit(); });
+
+    $(document).on('select2:open', function() {
+        const searchField = document.querySelector('.select2-container--open .select2-search__field');
+        if (searchField) {
+            searchField.style.cssText = `display: block !important; width: 100% !important; padding: 6px 10px !important; border: 1px solid #c4c8dc !important; border-radius: 6px !important; font-size: 14px !important; outline: none !important; background-color: white !important; color: #191c24 !important; box-sizing: border-box !important; height: auto !important; opacity: 1 !important; visibility: visible !important;`;
+        }
+    });
+
+    {% if filtros.agente %}addTag("{{ filtros.agente }}");{% endif %}
+    {% if filtros.nombre %}addTag("{{ filtros.nombre }}");{% endif %}
+    {% if filtros.cedula %}addTag("Cédula: {{ filtros.cedula }}");{% endif %}
+    {% if filtros.clasificacion %}addTag("{{ filtros.clasificacion|capfirst }}");{% endif %}
+    {% if filtros.fecha_inicio %}addTag("Desde: {{ filtros.fecha_inicio }}");{% endif %}
+    {% if filtros.fecha_fin %}addTag("Hasta: {{ filtros.fecha_fin }}");{% endif %}
+});
+</script>
+{% endblock scripts %}
+{% endblock content %}

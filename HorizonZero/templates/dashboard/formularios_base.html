@@ -1,0 +1,97 @@
+{% extends "dashboard/dashboard_base.html" %}
+{% load static %}
+{% load humanize %}
+{% block title %}Formularios — {{ block.super }}{% endblock %}
+
+{% block breadcrumb %}
+<span>Reportes</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span>Formularios</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span class="text-primary">{% block formulario_titulo %}{% endblock %}</span>
+{% endblock %}
+
+{% block page_title %}{% block formulario_page_title %}Formularios{% endblock %}{% endblock %}
+{% load permisos_tags %}
+{% block content %}
+<div class="p-6 flex flex-col gap-6">
+
+    <!-- Tabs del menú -->
+    <nav class="bg-white border border-outline-variant/20 rounded-2xl p-2 flex gap-1 overflow-x-auto flex-shrink-0">
+
+        {% if request.user|tiene_perm:"view_formulario_tarjetas" %}
+        <a href="{% url 'dashboard:formulario_tarjetas' %}"
+           class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap
+                  {% if active_tab == 'tarjetas' %}bg-primary text-white shadow-sm{% else %}text-slate-500 hover:bg-slate-100{% endif %}">
+            <span class="material-symbols-outlined text-[18px]">credit_card</span>
+            Tarjetas
+        </a>
+        {% endif %}
+
+        {% if request.user|tiene_perm:"view_formulario_ahorros" %}
+        <a href="{% url 'dashboard:formulario_ahorros' %}"
+           class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap
+                  {% if active_tab == 'ahorros' %}bg-primary text-white shadow-sm{% else %}text-slate-500 hover:bg-slate-100{% endif %}">
+            <span class="material-symbols-outlined text-[18px]">savings</span>
+            Ahorros
+        </a>
+        {% endif %}
+
+        {% if request.user|tiene_perm:"view_formulario_vivienda" %}
+        <a href="{% url 'dashboard:formulario_vivienda' %}"
+           class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap
+                  {% if active_tab == 'vivienda' %}bg-primary text-white shadow-sm{% else %}text-slate-500 hover:bg-slate-100{% endif %}">
+            <span class="material-symbols-outlined text-[18px]">home</span>
+            Vivienda
+        </a>
+        {% endif %}
+
+        {% if request.user|tiene_perm:"view_formulario_prestamos" %}
+        <a href="{% url 'dashboard:formulario_prestamos' %}"
+           class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap
+                  {% if active_tab == 'prestamos' %}bg-primary text-white shadow-sm{% else %}text-slate-500 hover:bg-slate-100{% endif %}">
+            <span class="material-symbols-outlined text-[18px]">account_balance</span>
+            Préstamos
+        </a>
+        {% endif %}
+
+        {% if request.user|tiene_perm:"view_formulario_control_credito" %}
+        <a href="{% url 'dashboard:formulario_control_credito' %}"
+           class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap
+                  {% if active_tab == 'control_credito' %}bg-primary text-white shadow-sm{% else %}text-slate-500 hover:bg-slate-100{% endif %}">
+            <span class="material-symbols-outlined text-[18px]">fact_check</span>
+            Control de Crédito
+        </a>
+        {% endif %}
+
+        {% if request.user|tiene_perm:"view_formulario_servicio_accionista" %}
+        <a href="{% url 'dashboard:formulario_servicio_accionista' %}"
+           class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap
+                  {% if active_tab == 'servicio_accionista' %}bg-primary text-white shadow-sm{% else %}text-slate-500 hover:bg-slate-100{% endif %}">
+            <span class="material-symbols-outlined text-[18px]">support_agent</span>
+            Servicio al Accionista
+        </a>
+        {% endif %}
+
+        {% if request.user|tiene_perm:"view_formulario_seguros" %}
+        <a href="{% url 'dashboard:formulario_seguros' %}"
+           class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap
+                  {% if active_tab == 'seguros' %}bg-primary text-white shadow-sm{% else %}text-slate-500 hover:bg-slate-100{% endif %}">
+            <span class="material-symbols-outlined text-[18px]">shield</span>
+            Seguros
+        </a>
+        {% endif %}
+
+    </nav>
+
+    <!-- Separador con descripción -->
+    <div class="flex items-center gap-3">
+        <p class="text-sm text-slate-400 whitespace-nowrap">Seleccione el tipo de solicitud que desea consultar</p>
+        <div class="flex-1 border-b border-primary/20"></div>
+    </div>
+
+    <!-- Contenido del tab activo -->
+    {% block formulario_content %}{% endblock %}
+
+</div>
+{% endblock %}

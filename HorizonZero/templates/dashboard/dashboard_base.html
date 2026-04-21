@@ -1,0 +1,286 @@
+{% load static %}
+{% load permisos_tags %}
+<!DOCTYPE html>
+<html class="light" lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Caja de Ande - {% block title %}Dashboard{% endblock title %}</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+    <link href="{% static 'css/dashboard/style.css' %}" rel="stylesheet"/>
+
+    <script src="{% static 'js/dashboard/tailwind.js' %}"></script>
+    <script src="{% static 'js/dashboard/tailwind_config_general.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+    <style>
+        body { font-family: 'Public Sans', 'Inter', sans-serif; background-color: #fafafa; color: #261814; }
+        .font-headline { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .sidebar-expanded  { width: 280px; }
+        .sidebar-collapsed { width: 80px; }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    {% block scripts %}{% endblock scripts %}
+</head>
+
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased overflow-hidden h-screen">
+
+<div class="flex h-screen">
+
+    <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+    <aside class="sidebar-expanded bg-white dark:bg-background-dark border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 ease-in-out z-50 h-screen overflow-y-auto">
+
+        <!-- Logo -->
+        <div class="p-6 flex items-center justify-center">
+            <img src="{% static 'img/dashboard/logoVerticalCA.png' %}" alt="Caja de Ande">
+        </div>
+
+        <!-- Navegación -->
+        <nav class="flex-1 px-4 space-y-1 mt-4">
+
+            <!-- Dashboard -->
+            <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary text-white font-medium"
+               href="{% url 'dashboard:home' %}">
+                <span class="material-symbols-outlined">dashboard</span>
+                <span class="truncate">Dashboard</span>
+            </a>
+
+            <!-- ── Reportes ── -->
+            <div>
+                <button type="button"
+                        onclick="toggleMenu('menu-reportes', 'icon-reportes')"
+                        class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-slate-500">bar_chart</span>
+                        <span class="truncate">Reportes</span>
+                    </div>
+                    <span id="icon-reportes" class="material-symbols-outlined text-slate-400 text-sm transition-transform duration-200">expand_more</span>
+                </button>
+
+                <div id="menu-reportes" class="hidden pl-3 pr-1 mt-1 space-y-1">
+
+                    {% if perms.dashboard.view_encuestas %}
+                    <div>
+                        <button type="button"
+                                onclick="toggleMenu('menu-encuestas', 'icon-encuestas')"
+                                class="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-slate-400 text-[20px]">poll</span>
+                                <span class="truncate text-sm font-medium">Encuestas</span>
+                            </div>
+                            <span id="icon-encuestas" class="material-symbols-outlined text-slate-400 text-sm transition-transform duration-200">expand_more</span>
+                        </button>
+                        <div id="menu-encuestas" class="hidden pl-8 pr-1 mt-1 space-y-0.5">
+                            {% if perms.dashboard.view_encuesta_satisfaccion %}
+                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                               href="{% url 'dashboard:encuesta_satisfaccion' %}">Encuesta de satisfacción</a>
+                            {% endif %}
+                            {% if perms.dashboard.view_encuesta_satisfaccion_oficina %}
+                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                               href="{% url 'dashboard:encuesta_satisfaccion_oficina' %}">Oficina Digital</a>
+                            {% endif %}
+                            {% if perms.dashboard.view_encuesta_experiencia_web %}
+                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                               href="{% url 'dashboard:encuesta_experiencia_web' %}">Experiencia en página web</a>
+                            {% endif %}
+                            {% if perms.dashboard.view_encuesta_satisfaccion_whatsapp_agente %}
+                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                               href="{% url 'dashboard:encuesta_whatsapp_agente' %}">WhatsApp Agente</a>
+                            {% endif %}
+                            {% if perms.dashboard.view_encuesta_satisfaccion_whatsapp %}
+                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                               href="{% url 'dashboard:encuesta_whatsapp' %}">WhatsApp</a>
+                            {% endif %}
+                            {% if perms.dashboard.view_encuesta_feria_salud %}
+                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                               href="{% url 'dashboard:encuesta_feria_salud' %}">Feria de la Salud</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if perms.dashboard.view_formularios %}
+                    <div>
+                        <button type="button"
+                                onclick="toggleMenu('menu-formulario', 'icon-formulario')"
+                                class="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-slate-400 text-[20px]">description</span>
+                                <span class="truncate text-sm font-medium">Formularios</span>
+                            </div>
+                            <span id="icon-formulario" class="material-symbols-outlined text-slate-400 text-sm transition-transform duration-200">expand_more</span>
+                        </button>
+                        <div id="menu-formulario" class="hidden pl-8 pr-1 mt-1 space-y-0.5">
+                            {% if perms.dashboard.view_formulario_tarjetas %}
+                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                               href="{% url 'dashboard:formulario_tarjetas' %}">Tarjetas</a>
+                            {% endif %}
+                            {% if perms.dashboard.view_formulario_ahorros %}
+                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                               href="{% url 'dashboard:formulario_ahorros' %}">Ahorros</a>
+                            {% endif %}
+                            {% if perms.dashboard.view_formulario_vivienda %}
+                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                               href="{% url 'dashboard:formulario_vivienda' %}">Vivienda</a>
+                            {% endif %}
+                            {% if perms.dashboard.view_formulario_prestamos %}
+                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                               href="{% url 'dashboard:formulario_prestamos' %}">Préstamos</a>
+                            {% endif %}
+                            {% if perms.dashboard.view_formulario_control_credito %}
+                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                               href="{% url 'dashboard:formulario_control_credito' %}">Control de Crédito</a>
+                            {% endif %}
+                            {% if perms.dashboard.view_formulario_servicio_accionista %}
+                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                               href="{% url 'dashboard:formulario_servicio_accionista' %}">Servicio al Accionista</a>
+                            {% endif %}
+                            {% if perms.dashboard.view_formulario_seguros %}
+                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                               href="{% url 'dashboard:formulario_seguros' %}">Seguros</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+
+            <!-- ── Usuarios (requiere view_usuarios) ── -->
+            {% if perms.dashboard.view_usuarios %}
+            <div>
+                <button type="button"
+                        onclick="toggleMenu('menu-usuarios', 'icon-usuarios')"
+                        class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-slate-500">group</span>
+                        <span class="truncate">Usuarios</span>
+                    </div>
+                    <span id="icon-usuarios" class="material-symbols-outlined text-slate-400 text-sm transition-transform duration-200">expand_more</span>
+                </button>
+
+                <div id="menu-usuarios" class="hidden pl-3 pr-1 mt-1 space-y-0.5">
+                    <a class="flex items-center gap-3 px-3 py-2 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                       href="{% url 'dashboard:agentes_home' %}">
+                        <span class="material-symbols-outlined text-slate-400 text-[18px]">support_agent</span>
+                        Agentes
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ── Logs (solo superusuario) ── -->
+            {% if perms.dashboard.view_logs %}
+            <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            href="{% url 'dashboard:logs_home' %}">
+                <span class="material-symbols-outlined text-slate-500">manage_search</span>
+                <span class="truncate">Logs</span>
+            </a>
+            {% endif %}
+
+        </nav>
+
+        <!-- Cerrar sesión -->
+        <div class="p-4 border-t border-slate-200 dark:border-slate-800">
+            <a href="{% url 'usuarios:logout' %}"
+               class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                <span class="material-symbols-outlined">logout</span>
+                <span class="truncate font-medium">Cerrar sesión</span>
+            </a>
+        </div>
+
+    </aside>
+
+    <!-- ═══════════════════ MAIN ═══════════════════ -->
+    <main class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+
+        <!-- Header -->
+        <header class="h-20 bg-white dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
+            <div class="flex flex-col">
+                <div class="flex items-center gap-2 text-xs text-slate-400 font-medium uppercase tracking-wider">
+                    {% block breadcrumb %}
+                    <span>Institución</span>
+                    <span class="material-symbols-outlined text-[10px]">chevron_right</span>
+                    <span class="text-primary">Panel de Control</span>
+                    {% endblock breadcrumb %}
+                </div>
+                <h1 class="text-xl font-bold">{% block page_title %}Resumen General{% endblock page_title %}</h1>
+            </div>
+
+            <div class="flex items-center gap-6">
+                <button class="relative p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-white dark:border-background-dark"></span>
+                </button>
+                <div class="h-8 w-px bg-slate-200 dark:border-slate-800"></div>
+                <div class="flex items-center gap-3 cursor-pointer group">
+                    <div class="text-right hidden sm:block">
+                        <p class="text-sm font-bold leading-tight">{{ request.user.get_full_name|default:request.user.username }}</p>
+                        <p class="text-xs text-slate-500">Caja de Ande</p>
+                    </div>
+                    <div class="w-10 h-10 flex items-center justify-center rounded-full bg-primary ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
+                        <span class="text-white text-sm font-bold">
+                            {% if request.user.first_name %}
+                                {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
+                            {% else %}
+                                {{ request.user.username|slice:":2"|upper }}
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenido -->
+        <div class="flex-1 overflow-y-auto">
+            <div class="p-1 w-full">
+                {% if show_welcome %}
+                <div class="flex flex-col items-center justify-center min-h-[80vh] gap-6 p-12 text-center">
+                    <img src="{% static 'img/dashboard/horizontalLogo.png' %}" alt="Caja de Ande" class="w-1/2 mx-auto"/>
+                    <div class="text-center">
+                        <h1 class="text-4xl font-bold text-on-surface">
+                            Bienvenido al Dashboard
+                            <span style="color: #003fb7;" class="text-5xl font-bold">
+                                {{ request.user.get_full_name|default:request.user.username }}
+                            </span>
+                        </h1>
+                        <p class="text-sm text-slate-400 mt-2">Selecciona un reporte del menú lateral para comenzar</p>
+                    </div>
+                </div>
+                {% endif %}
+                {% block content %}{% endblock content %}
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- toggleMenu definido inline — no depende de ningún JS externo -->
+<script>
+function toggleMenu(menuId, iconId) {
+    var menu = document.getElementById(menuId);
+    var icon = document.getElementById(iconId);
+    if (!menu) return;
+    var isHidden = menu.classList.contains('hidden');
+    if (isHidden) {
+        menu.classList.remove('hidden');
+        if (icon) icon.style.transform = 'rotate(180deg)';
+    } else {
+        menu.classList.add('hidden');
+        if (icon) icon.style.transform = '';
+    }
+}
+</script>
+
+</body>
+</html>

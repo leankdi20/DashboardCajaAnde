@@ -1,0 +1,184 @@
+{% extends "dashboard/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Agentes Eliminados{% endblock %}
+
+{% block breadcrumb %}
+<span>Usuarios</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<a href="{% url 'dashboard:agentes_home' %}" class="hover:text-primary transition-colors">Agentes</a>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span class="text-primary">Eliminados</span>
+{% endblock %}
+
+{% block page_title %}Agentes Eliminados{% endblock %}
+
+{% block content %}
+<div class="p-6 space-y-6">
+
+  {% for msg in messages %}
+  <div class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
+    {% if msg.tags == 'success' %}bg-green-50 text-green-700 border border-green-200
+    {% elif msg.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+    {% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+    <span class="material-symbols-outlined text-[18px]">
+      {% if msg.tags == 'success' %}check_circle{% elif msg.tags == 'error' %}error{% else %}info{% endif %}
+    </span>
+    {{ msg }}
+  </div>
+  {% endfor %}
+
+  {# Aviso informativo #}
+  <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+    <span class="material-symbols-outlined text-amber-500 text-[20px] mt-0.5">info</span>
+    <div>
+      <p class="text-sm font-medium text-amber-700">Agentes desactivados</p>
+      <p class="text-xs text-amber-600 mt-0.5">
+        Estos agentes fueron eliminados pero sus registros se conservan. Podés restaurarlos en cualquier momento.
+      </p>
+    </div>
+  </div>
+
+  {# Filtros #}
+  <form method="get" class="flex flex-wrap gap-2">
+    <div class="relative flex-1 min-w-48">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
+      <input type="text" name="q" value="{{ buscar }}"
+             placeholder="Buscar por nombre..."
+             class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+    </div>
+    <select name="unidad_id"
+            class="px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white">
+      <option value="">Todas las unidades</option>
+      {% for u in unidades %}
+      <option value="{{ u.unidad_id }}" {% if filtro_unidad == u.unidad_id|stringformat:"s" %}selected{% endif %}>
+        {{ u.nombre }}
+      </option>
+      {% endfor %}
+    </select>
+    <select name="sucursal_id"
+            class="px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white">
+      <option value="">Todas las sucursales</option>
+      {% for s in sucursales %}
+      <option value="{{ s.sucursal_id }}" {% if filtro_sucursal == s.sucursal_id|stringformat:"s" %}selected{% endif %}>
+        {{ s.nombre }}
+      </option>
+      {% endfor %}
+    </select>
+    <button type="submit"
+            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-medium transition-colors">
+      Filtrar
+    </button>
+    {% if buscar or filtro_unidad or filtro_sucursal %}
+    <a href="{% url 'dashboard:agentes_inactivos' %}"
+       class="px-4 py-2.5 text-slate-500 hover:text-slate-700 rounded-xl text-sm transition-colors">
+      Limpiar
+    </a>
+    {% endif %}
+    <a href="{% url 'dashboard:agentes_home' %}"
+       class="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-medium transition-colors ml-auto">
+      <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+      Volver a activos
+    </a>
+  </form>
+
+  {# Tabla #}
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100">
+      <h3 class="font-semibold text-slate-700">
+        Agentes eliminados
+        <span class="ml-2 text-xs font-normal text-slate-400">
+          ({{ paginator.count }} resultado{% if paginator.count != 1 %}s{% endif %})
+        </span>
+      </h3>
+    </div>
+
+    {% if agentes %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-50 text-xs text-slate-500 uppercase tracking-wider">
+            <th class="px-6 py-3 text-left font-medium">ID</th>
+            <th class="px-6 py-3 text-left font-medium">Nombre</th>
+            <th class="px-6 py-3 text-left font-medium">Login AD</th> 
+            <th class="px-6 py-3 text-left font-medium">Unidad</th>
+            <th class="px-6 py-3 text-left font-medium">Sucursal</th>
+            <th class="px-6 py-3 text-center font-medium">Restaurar</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for agente in agentes %}
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="px-6 py-4 text-slate-400 font-mono text-xs">#{{ agente.agente_id }}</td>
+            <td class="px-6 py-4 font-medium text-slate-500 line-through">{{ agente.nombre }}</td>
+            {# ← agregar esto después #}
+            <td class="px-6 py-4">
+                {% if agente.login_ad == 'pendiente' or not agente.login_ad %}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-600">
+                    <span class="material-symbols-outlined text-[12px]">pending</span>
+                    Pendiente
+                </span>
+                {% else %}
+                <span class="text-xs font-mono text-slate-400">{{ agente.login_ad }}</span>
+                {% endif %}
+            </td>
+            <td class="px-6 py-4">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
+                {{ agente.unidad_nombre }}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-slate-500">{{ agente.sucursal_nombre }}</td>
+            <td class="px-6 py-4 text-center">
+              <form method="post" action="{% url 'dashboard:agente_restaurar' agente.agente_id %}">
+                {% csrf_token %}
+                <button type="submit"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-xs font-medium transition-colors">
+                  <span class="material-symbols-outlined text-[14px]">restore</span>
+                  Restaurar
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {# Paginación #}
+    {% if page_obj.has_other_pages %}
+    <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+      <p class="text-xs text-slate-400">
+        Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }}
+        de {{ paginator.count }} agentes
+      </p>
+      <div class="flex items-center gap-1">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ buscar }}&unidad_id={{ filtro_unidad|default:'' }}&sucursal_id={{ filtro_sucursal|default:'' }}"
+           class="px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Anterior</a>
+        {% endif %}
+        {% for num in paginator.page_range %}
+          {% if page_obj.number == num %}
+          <span class="px-3 py-1.5 text-sm bg-primary text-white rounded-lg font-medium">{{ num }}</span>
+          {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+          <a href="?page={{ num }}&q={{ buscar }}&unidad_id={{ filtro_unidad|default:'' }}&sucursal_id={{ filtro_sucursal|default:'' }}"
+             class="px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&q={{ buscar }}&unidad_id={{ filtro_unidad|default:'' }}&sucursal_id={{ filtro_sucursal|default:'' }}"
+           class="px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Siguiente</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="py-16 text-center">
+      <span class="material-symbols-outlined text-4xl text-slate-300">check_circle</span>
+      <p class="mt-2 text-slate-400 text-sm">No hay agentes eliminados</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
