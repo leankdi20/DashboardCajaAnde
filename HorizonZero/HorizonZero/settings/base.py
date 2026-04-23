@@ -179,6 +179,19 @@ LOGOUT_REDIRECT_URL = "/usuarios/login/"
 # Auth LDAP
 AUTH_API_LDAP_URL = os.environ.get("AUTH_API_LDAP_URL", "")
 
+
+#===========================================================#
+# Variables de entorno para el envío de correos
+EMAIL_BACKEND    = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST       = os.getenv('EMAIL_HOST', 'smtp.office365.com')
+EMAIL_PORT       = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_HOST_USER  = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS    = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+DEFAULT_FROM_EMAIL = os.getenv('EMAIL_FROM', '')
+DETRACTOR_EMAIL_DESTINO = os.getenv('DETRACTOR_EMAIL_DESTINO', '')
+#===========================================================#
+
 # Seguridad de sesiones
 SESSION_COOKIE_HTTPONLY = True      # JS no puede leer la cookie
 SESSION_COOKIE_SAMESITE = "Lax"     # Protección CSRF básica

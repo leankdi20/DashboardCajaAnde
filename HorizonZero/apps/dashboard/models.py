@@ -1,5 +1,10 @@
 from django.db import models
 
+from django.contrib.auth.models import User
+from django.utils import timezone
+from datetime import timedelta
+
+
 # Create your models here.
 
 
@@ -113,10 +118,6 @@ class DashboardAccess(models.Model):
 # Agregar este modelo AL FINAL del archivo, después de DashboardAccess
 # ═══════════════════════════════════════════════════════════════════
 
-from django.db import models
-from django.contrib.auth.models import User
-from django.utils import timezone
-from datetime import timedelta
 
 
 class AuditLog(models.Model):
@@ -331,6 +332,33 @@ class AuditLog(models.Model):
 # ═══════════════════════════════════════════════════════════════════
 # apps/core/audit.py  — helper para registrar desde cualquier view
 # ═══════════════════════════════════════════════════════════════════
+
+class DetractorNotificado(models.Model):
+    """
+    Registro de detractores que ya recibieron notificación por correo.
+    Evita enviar el mismo correo dos veces.
+    """
+    respuesta_id     = models.IntegerField(unique=True)
+    encuesta_id      = models.IntegerField(null=True, blank=True)
+    agente           = models.CharField(max_length=255, blank=True)
+    sucursal         = models.CharField(max_length=255, blank=True)
+    promedio         = models.FloatField(null=True)
+    fecha_encuesta   = models.DateTimeField(null=True)
+    fecha_notificado = models.DateTimeField(auto_now_add=True)
+    correo_enviado   = models.BooleanField(default=True)
+    error_envio      = models.CharField(max_length=500, blank=True, null=True)
+
+    class Meta:
+        app_label = "dashboard"
+        verbose_name = "Detractor notificado"
+        db_table = "dashboard_detractor_notificado"
+
+
+
+
+
+
+
 
 """
 USO EN VIEWS:
