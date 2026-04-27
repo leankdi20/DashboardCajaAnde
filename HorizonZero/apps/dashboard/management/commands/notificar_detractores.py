@@ -308,7 +308,7 @@ class Command(BaseCommand):
             total_errores  += errores
 
         self.stdout.write(self.style.SUCCESS(
-            f"\n  ✅ Total: {total_enviados} enviados, {total_errores} errores."
+            f"\n  Total: {total_enviados} enviados, {total_errores} errores."
         ))
 
     # ── Procesar un grupo ────────────────────────────────────────
@@ -374,55 +374,73 @@ class Command(BaseCommand):
             # Detalle de la encuesta
             try:
                 detalle_sql = build_query_detalle(grupo)
-                detalle     = ReportesDBService.ejecutar_query(detalle_sql, [rid])
+                detalle = ReportesDBService.ejecutar_query(detalle_sql, [rid])
             except Exception:
                 detalle = []
 
             if solo_marcar:
-                DetractorNotificado.objects.create(
-                    respuesta_id   = rid,
-                    encuesta_id    = det.get("encuesta_id"),
-                    agente         = det.get("Agente", "") or "",
-                    sucursal       = det.get("Sucursal", "") or "",
-                    promedio       = det.get("promedio_encuesta"),
-                    fecha_encuesta = fecha_raw,
-                    correo_enviado = False,
-                    error_envio    = "solo-marcar",
-                    grupo          = nombre,
+                obj, created = DetractorNotificado.objects.get_or_create(
+                    respuesta_id=rid,
+                    grupo=nombre,
+                    defaults={
+                        "encuesta_id": det.get("encuesta_id"),
+                        "agente": det.get("Agente", "") or "",
+                        "sucursal": det.get("Sucursal", "") or "",
+                        "promedio": det.get("promedio_encuesta"),
+                        "fecha_encuesta": fecha_raw,
+                        "correo_enviado": False,
+                        "error_envio": "solo-marcar",
+                    }
                 )
-                enviados += 1
+
+                if created:
+                    enviados += 1
+                    self.stdout.write(f"  [{nombre}] OK marcado respuesta_id={rid}")
+                else:
+                    self.stdout.write(f"  [{nombre}] Ya existia respuesta_id={rid}")
+
                 continue
 
             try:
                 self._enviar_correo(det, detalle, destinos, grupo)
-                DetractorNotificado.objects.create(
-                    respuesta_id   = rid,
-                    encuesta_id    = det.get("encuesta_id"),
-                    agente         = det.get("Agente", "") or "",
-                    sucursal       = det.get("Sucursal", "") or "",
-                    promedio       = det.get("promedio_encuesta"),
-                    fecha_encuesta = fecha_raw,
-                    correo_enviado = True,
-                    grupo          = nombre,
+
+                obj, created = DetractorNotificado.objects.get_or_create(
+                    respuesta_id=rid,
+                    grupo=nombre,
+                    defaults={
+                        "encuesta_id": det.get("encuesta_id"),
+                        "agente": det.get("Agente", "") or "",
+                        "sucursal": det.get("Sucursal", "") or "",
+                        "promedio": det.get("promedio_encuesta"),
+                        "fecha_encuesta": fecha_raw,
+                        "correo_enviado": True,
+                    }
                 )
-                enviados += 1
-                self.stdout.write(f"  [{nombre}] ✓ respuesta_id={rid}")
+
+                if created:
+                    enviados += 1
+                    self.stdout.write(f"  [{nombre}] OK respuesta_id={rid}")
+                else:
+                    self.stdout.write(f"  [{nombre}] Ya existia respuesta_id={rid}")
 
             except Exception as e:
-                DetractorNotificado.objects.create(
-                    respuesta_id   = rid,
-                    encuesta_id    = det.get("encuesta_id"),
-                    agente         = det.get("Agente", "") or "",
-                    sucursal       = det.get("Sucursal", "") or "",
-                    promedio       = det.get("promedio_encuesta"),
-                    fecha_encuesta = fecha_raw,
-                    correo_enviado = False,
-                    error_envio    = str(e)[:500],
-                    grupo          = nombre,
+                obj, created = DetractorNotificado.objects.get_or_create(
+                    respuesta_id=rid,
+                    grupo=nombre,
+                    defaults={
+                        "encuesta_id": det.get("encuesta_id"),
+                        "agente": det.get("Agente", "") or "",
+                        "sucursal": det.get("Sucursal", "") or "",
+                        "promedio": det.get("promedio_encuesta"),
+                        "fecha_encuesta": fecha_raw,
+                        "correo_enviado": False,
+                        "error_envio": str(e)[:500],
+                    }
                 )
+
                 errores += 1
                 self.stdout.write(
-                    self.style.ERROR(f"  [{nombre}] ✗ respuesta_id={rid}: {e}")
+                    self.style.ERROR(f"  [{nombre}] ERROR respuesta_id={rid}: {e}")
                 )
 
         return enviados, errores
