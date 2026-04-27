@@ -1,0 +1,235 @@
+{% extends "dashboard/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Perfil de Agentes — {{ config.nombre }}{% endblock %}
+
+{% block breadcrumb %}
+<span>Reportes</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span>Encuestas</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span class="text-primary">Perfil Agentes · {{ config.nombre }}</span>
+{% endblock %}
+
+{% block page_title %}Perfil de Agentes — {{ config.nombre }}{% endblock %}
+
+{% block content %}
+<div class="p-6 flex flex-col gap-5">
+
+  {# ── Badge tipo de encuesta ── #}
+  <div class="flex items-center gap-3">
+    <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold
+      {% if tipo == 'sat' %}bg-primary/10 text-primary
+      {% else %}bg-blue-100 text-blue-700{% endif %}">
+      <span class="material-symbols-outlined text-[18px]">{{ config.icono }}</span>
+      {{ config.nombre }}
+    </span>
+    {# Enlace al otro módulo #}
+    {% if tipo == 'sat' %}
+    <a href="{% url 'dashboard:perfil_agentes_od_index' %}"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium
+              bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-500 transition-colors">
+      <span class="material-symbols-outlined text-[16px]">computer</span>
+      Ver Oficina Digital
+    </a>
+    {% else %}
+    <a href="{% url 'dashboard:perfil_agentes_sat_index' %}"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium
+              bg-slate-100 hover:bg-primary/10 hover:text-primary text-slate-500 transition-colors">
+      <span class="material-symbols-outlined text-[16px]">star</span>
+      Ver Satisfacción
+    </a>
+    {% endif %}
+  </div>
+
+  {# ── Filtros ── #}
+  <section class="bg-white border border-slate-200 rounded-2xl p-5">
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+
+      <div class="md:col-span-2">
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Buscar agente</label>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+          <input type="text" id="input-buscar" value="{{ buscar }}"
+                 placeholder="Nombre del agente..."
+                 class="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Unidad</label>
+        <select id="sel-unidad"
+                class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+          <option value="">Todas</option>
+          {% for u in opciones.unidades %}
+          <option value="{{ u.Unidad }}" {% if filtro_unidad == u.Unidad %}selected{% endif %}>{{ u.Unidad }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Sucursal</label>
+        <select id="sel-sucursal"
+                class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+          <option value="">Todas</option>
+          {% for s in opciones.sucursales %}
+          <option value="{{ s.Sucursal }}" {% if filtro_sucursal == s.Sucursal %}selected{% endif %}>{{ s.Sucursal }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Desde</label>
+        <input type="date" id="input-desde" value="{{ filtro_fecha_inicio }}"
+               class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary">
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Hasta</label>
+        <input type="date" id="input-hasta" value="{{ filtro_fecha_fin }}"
+               class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary">
+      </div>
+
+    </div>
+  </section>
+
+  {# ── Contador ── #}
+  <div class="flex items-center justify-between">
+    <p class="text-sm text-slate-500" id="txt-total">Cargando agentes...</p>
+    <div id="spinner" class="flex items-center gap-2 text-xs text-slate-400">
+      <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+      Cargando datos...
+    </div>
+  </div>
+
+  {# ── Grid ── #}
+  <div id="grid-agentes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    {% for i in "12345678" %}
+    <div class="bg-slate-100 rounded-2xl h-44 animate-pulse"></div>
+    {% endfor %}
+  </div>
+
+  <div id="sin-resultados" class="hidden py-20 text-center bg-white rounded-2xl border border-slate-100">
+    <span class="material-symbols-outlined text-5xl text-slate-200">person_search</span>
+    <p class="mt-3 text-slate-400">No se encontraron agentes</p>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const DATA_URL    = "{% if tipo == 'sat' %}{% url 'dashboard:perfil_agentes_sat_data' %}{% else %}{% url 'dashboard:perfil_agentes_od_data' %}{% endif %}";
+const AGENTES_BASE = window.location.origin + '{{ config.base_path }}';
+const TIPO         = "{{ tipo }}";
+const ESCALA       = TIPO === 'od' ? 3 : 5;
+
+let debounceTimer = null;
+
+function buildUrl() {
+  return `${DATA_URL}?` + new URLSearchParams({
+    q:            document.getElementById('input-buscar').value,
+    unidad:       document.getElementById('sel-unidad').value,
+    sucursal:     document.getElementById('sel-sucursal').value,
+    fecha_inicio: document.getElementById('input-desde').value,
+    fecha_fin:    document.getElementById('input-hasta').value,
+  });
+}
+
+function clasificacionColor(promedio) {
+  const umbral_verde  = ESCALA === 3 ? 2.5 : 4;
+  const umbral_amarillo = ESCALA === 3 ? 2 : 3;
+  if (promedio >= umbral_verde)    return { bar: 'bg-green-500', text: 'text-green-600' };
+  if (promedio >= umbral_amarillo) return { bar: 'bg-amber-400', text: 'text-amber-600' };
+  return { bar: 'bg-red-500', text: 'text-red-500' };
+}
+
+function renderTarjeta(a) {
+  const col     = clasificacionColor(a.promedio);
+  const pct     = Math.round((a.promedio / ESCALA) * 100);
+  const href    = AGENTES_BASE + encodeURIComponent(a.Agente) + '/';
+  const inicial = a.Agente.charAt(0);
+  const trofeo  = a.rank_unidad === 1
+    ? `<span class="material-symbols-outlined text-amber-500 text-[18px]" title="Top 1 en su unidad">emoji_events</span>`
+    : '';
+  const escalaLabel = ESCALA === 3 ? `${a.promedio}/3` : `${a.promedio}/5`;
+
+  return `
+  <a href="${href}" target="_blank" rel="noopener noreferrer"
+     class="bg-white border border-slate-100 rounded-2xl p-5 hover:shadow-md hover:border-primary/30 transition-all group block">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+        <span class="text-sm font-bold text-primary">${inicial}</span>
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-bold text-slate-800 truncate">${a.Agente}</p>
+        <p class="text-xs text-slate-400 truncate">${a.Unidad || ''}</p>
+      </div>
+      ${trofeo}
+    </div>
+    <div class="mb-3">
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-xs text-slate-500">Satisfacción</span>
+        <span class="text-sm font-black ${col.text}">${escalaLabel}</span>
+      </div>
+      <div class="w-full bg-slate-100 rounded-full h-2">
+        <div class="h-2 rounded-full ${col.bar}" style="width:${pct}%"></div>
+      </div>
+    </div>
+    <div class="grid grid-cols-3 gap-2 mb-3">
+      <div class="text-center bg-green-50 rounded-lg py-1.5">
+        <p class="text-xs font-black text-green-600">${a.promotores}</p>
+        <p class="text-[10px] text-green-500">Prom.</p>
+      </div>
+      <div class="text-center bg-amber-50 rounded-lg py-1.5">
+        <p class="text-xs font-black text-amber-600">${a.pasivos}</p>
+        <p class="text-[10px] text-amber-500">Pas.</p>
+      </div>
+      <div class="text-center bg-red-50 rounded-lg py-1.5">
+        <p class="text-xs font-black text-red-600">${a.detractores}</p>
+        <p class="text-[10px] text-red-500">Det.</p>
+      </div>
+    </div>
+    <div class="flex items-center justify-between pt-3 border-t border-slate-50">
+      <span class="text-xs text-slate-400">${a.total_enc} encuestas</span>
+      <span class="text-xs text-slate-400">${a.Sucursal || ''}</span>
+    </div>
+  </a>`;
+}
+
+function cargar() {
+  document.getElementById('spinner').classList.remove('hidden');
+  document.getElementById('sin-resultados').classList.add('hidden');
+  fetch(buildUrl(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('spinner').classList.add('hidden');
+      const grid = document.getElementById('grid-agentes');
+      if (!data.agentes || data.agentes.length === 0) {
+        grid.innerHTML = '';
+        document.getElementById('sin-resultados').classList.remove('hidden');
+        document.getElementById('txt-total').textContent = '0 agentes encontrados';
+        return;
+      }
+      document.getElementById('txt-total').textContent =
+        `${data.total} agente${data.total !== 1 ? 's' : ''} encontrado${data.total !== 1 ? 's' : ''}`;
+      grid.innerHTML = data.agentes.map(renderTarjeta).join('');
+    })
+    .catch(() => {
+      document.getElementById('spinner').classList.add('hidden');
+      document.getElementById('txt-total').textContent = 'Error al cargar datos';
+    });
+}
+
+function debounce(fn, ms) { clearTimeout(debounceTimer); debounceTimer = setTimeout(fn, ms); }
+
+document.addEventListener('DOMContentLoaded', function () {
+  document.getElementById('input-buscar').addEventListener('input',  () => debounce(cargar, 300));
+  document.getElementById('sel-unidad').addEventListener('change',   cargar);
+  document.getElementById('sel-sucursal').addEventListener('change', cargar);
+  document.getElementById('input-desde').addEventListener('change',  cargar);
+  document.getElementById('input-hasta').addEventListener('change',  cargar);
+  cargar();
+});
+</script>
+{% endblock %}

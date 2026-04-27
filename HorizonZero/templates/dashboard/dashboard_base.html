@@ -82,28 +82,61 @@
                         </button>
                         <div id="menu-encuestas" class="hidden pl-8 pr-1 mt-1 space-y-0.5">
                             {% if perms.dashboard.view_encuesta_satisfaccion %}
-                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
-                               href="{% url 'dashboard:encuesta_satisfaccion' %}">Encuesta de satisfacción</a>
+                            <a class="flex items-center gap-2.5 px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                            href="{% url 'dashboard:perfil_agentes_sat_index' %}">
+                                <span class="material-symbols-outlined text-[16px]">person_search</span>
+                                Perfil Ag. (SAT)
+                            </a>
                             {% endif %}
                             {% if perms.dashboard.view_encuesta_satisfaccion_oficina %}
-                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
-                               href="{% url 'dashboard:encuesta_satisfaccion_oficina' %}">Oficina Digital</a>
+                            <a class="flex items-center gap-2.5 px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                            href="{% url 'dashboard:perfil_agentes_od_index' %}">
+                                <span class="material-symbols-outlined text-[16px]">manage_accounts</span>
+                                Perfil Ag. (OD)
+                            </a>
+                            {% endif %}
+                            <hr class="my-2">
+                            {% if perms.dashboard.view_encuesta_satisfaccion %}
+                            <a class="flex items-center gap-2.5 px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                            href="{% url 'dashboard:encuesta_satisfaccion' %}">
+                                <span class="material-symbols-outlined text-[16px]">star</span>
+                                Encuesta de satisfacción
+                            </a>
+                            {% endif %}
+                            {% if perms.dashboard.view_encuesta_satisfaccion_oficina %}
+                            <a class="flex items-center gap-2.5 px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                            href="{% url 'dashboard:encuesta_satisfaccion_oficina' %}">
+                                <span class="material-symbols-outlined text-[16px]">computer</span>
+                                Oficina Digital
+                            </a>
                             {% endif %}
                             {% if perms.dashboard.view_encuesta_experiencia_web %}
-                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
-                               href="{% url 'dashboard:encuesta_experiencia_web' %}">Experiencia en página web</a>
+                            <a class="flex items-center gap-2.5 px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                            href="{% url 'dashboard:encuesta_experiencia_web' %}">
+                                <span class="material-symbols-outlined text-[16px]">language</span>
+                                Experiencia en página web
+                            </a>
                             {% endif %}
                             {% if perms.dashboard.view_encuesta_satisfaccion_whatsapp_agente %}
-                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
-                               href="{% url 'dashboard:encuesta_whatsapp_agente' %}">WhatsApp Agente</a>
+                            <a class="flex items-center gap-2.5 px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                            href="{% url 'dashboard:encuesta_whatsapp_agente' %}">
+                                <span class="material-symbols-outlined text-[16px]">support_agent</span>
+                                WhatsApp Agente
+                            </a>
                             {% endif %}
                             {% if perms.dashboard.view_encuesta_satisfaccion_whatsapp %}
-                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
-                               href="{% url 'dashboard:encuesta_whatsapp' %}">WhatsApp</a>
+                            <a class="flex items-center gap-2.5 px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                            href="{% url 'dashboard:encuesta_whatsapp' %}">
+                                <span class="material-symbols-outlined text-[16px]">chat</span>
+                                WhatsApp
+                            </a>
                             {% endif %}
                             {% if perms.dashboard.view_encuesta_feria_salud %}
-                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
-                               href="{% url 'dashboard:encuesta_feria_salud' %}">Feria de la Salud</a>
+                            <a class="flex items-center gap-2.5 px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                            href="{% url 'dashboard:encuesta_feria_salud' %}">
+                                <span class="material-symbols-outlined text-[16px]">favorite</span>
+                                Feria de la Salud
+                            </a>
                             {% endif %}
                         </div>
                     </div>
@@ -122,32 +155,53 @@
                         </button>
                         <div id="menu-formulario" class="hidden pl-8 pr-1 mt-1 space-y-0.5">
                             {% if perms.dashboard.view_formulario_tarjetas %}
-                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
-                               href="{% url 'dashboard:formulario_tarjetas' %}">Tarjetas</a>
+                            <a class="flex items-center gap-2.5 px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                            href="{% url 'dashboard:formulario_tarjetas' %}">
+                                <span class="material-symbols-outlined text-[16px]">credit_card</span>
+                                Tarjetas
+                            </a>
                             {% endif %}
                             {% if perms.dashboard.view_formulario_ahorros %}
-                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
-                               href="{% url 'dashboard:formulario_ahorros' %}">Ahorros</a>
+                            <a class="flex items-center gap-2.5 px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                            href="{% url 'dashboard:formulario_ahorros' %}">
+                                <span class="material-symbols-outlined text-[16px]">savings</span>
+                                Ahorros
+                            </a>
                             {% endif %}
                             {% if perms.dashboard.view_formulario_vivienda %}
-                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
-                               href="{% url 'dashboard:formulario_vivienda' %}">Vivienda</a>
+                            <a class="flex items-center gap-2.5 px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                            href="{% url 'dashboard:formulario_vivienda' %}">
+                                <span class="material-symbols-outlined text-[16px]">home</span>
+                                Vivienda
+                            </a>
                             {% endif %}
                             {% if perms.dashboard.view_formulario_prestamos %}
-                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
-                               href="{% url 'dashboard:formulario_prestamos' %}">Préstamos</a>
+                            <a class="flex items-center gap-2.5 px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                            href="{% url 'dashboard:formulario_prestamos' %}">
+                                <span class="material-symbols-outlined text-[16px]">account_balance</span>
+                                Préstamos
+                            </a>
                             {% endif %}
                             {% if perms.dashboard.view_formulario_control_credito %}
-                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
-                               href="{% url 'dashboard:formulario_control_credito' %}">Control de Crédito</a>
+                            <a class="flex items-center gap-2.5 px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                            href="{% url 'dashboard:formulario_control_credito' %}">
+                                <span class="material-symbols-outlined text-[16px]">verified</span>
+                                Control de Crédito
+                            </a>
                             {% endif %}
                             {% if perms.dashboard.view_formulario_servicio_accionista %}
-                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
-                               href="{% url 'dashboard:formulario_servicio_accionista' %}">Servicio al Accionista</a>
+                            <a class="flex items-center gap-2.5 px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                            href="{% url 'dashboard:formulario_servicio_accionista' %}">
+                                <span class="material-symbols-outlined text-[16px]">person_pin</span>
+                                Servicio al Accionista
+                            </a>
                             {% endif %}
                             {% if perms.dashboard.view_formulario_seguros %}
-                            <a class="block px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
-                               href="{% url 'dashboard:formulario_seguros' %}">Seguros</a>
+                            <a class="flex items-center gap-2.5 px-3 py-1.5 text-sm text-slate-500 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                            href="{% url 'dashboard:formulario_seguros' %}">
+                                <span class="material-symbols-outlined text-[16px]">shield</span>
+                                Seguros
+                            </a>
                             {% endif %}
                         </div>
                     </div>

@@ -164,7 +164,7 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -182,15 +182,41 @@ AUTH_API_LDAP_URL = os.environ.get("AUTH_API_LDAP_URL", "")
 
 #===========================================================#
 # Variables de entorno para el envío de correos
-EMAIL_BACKEND    = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST       = os.getenv('EMAIL_HOST', 'smtp.office365.com')
-EMAIL_PORT       = int(os.getenv('EMAIL_PORT', 587))
-EMAIL_HOST_USER  = os.getenv('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-EMAIL_USE_TLS    = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
-DEFAULT_FROM_EMAIL = os.getenv('EMAIL_FROM', '')
-DETRACTOR_EMAIL_DESTINO = os.getenv('DETRACTOR_EMAIL_DESTINO', '')
+# EMAIL_BACKEND    = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST       = os.getenv('EMAIL_HOST', 'smtp.office365.com')
+# EMAIL_PORT       = int(os.getenv('EMAIL_PORT', 25))
+# EMAIL_HOST_USER  = os.getenv('EMAIL_HOST_USER', '')
+# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+# EMAIL_USE_TLS    = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+# DEFAULT_FROM_EMAIL = os.getenv('EMAIL_FROM', '')
+# DETRACTOR_EMAIL_DESTINO = os.getenv('DETRACTOR_EMAIL_DESTINO', '')
+EMAIL_HOST          = os.getenv("EMAIL_HOST")
+EMAIL_PORT          = int(os.getenv("EMAIL_PORT", 25))
+EMAIL_HOST_USER     = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS       = os.getenv("EMAIL_USE_TLS", "False") == "True"
+EMAIL_FROM          = os.getenv("EMAIL_FROM", "horizonzero_noreply@cajadeande.fi.cr")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "horizonzero_noreply@cajadeande.fi.cr")
+EMAIL_USE_SSL       = os.getenv("EMAIL_USE_SSL", "False") == "True"
+# DETRACTOR_EMAIL_DESTINO = os.getenv('DETRACTOR_EMAIL_DESTINO', '')
+EMAIL_TIMEOUT = 30 
 #===========================================================#
+
+# VARIABLES PARA ENVIO DE CORREOS A JEFATURAS POR DETRACTORES
+def parse_emails(env_key):
+    """Convierte 'a@x.com,b@x.com' en ['a@x.com', 'b@x.com']"""
+    raw = os.getenv(env_key, "")
+    return [e.strip() for e in raw.split(",") if e.strip()]
+
+DETRACTOR_EMAIL_SAT          = parse_emails("DETRACTOR_EMAIL_SAT")
+DETRACTOR_EMAIL_OD           = parse_emails("DETRACTOR_EMAIL_OD")
+DETRACTOR_EMAIL_WEB          = parse_emails("DETRACTOR_EMAIL_WEB")
+DETRACTOR_EMAIL_WA_AGENTE    = parse_emails("DETRACTOR_EMAIL_WA_AGENTE")
+DETRACTOR_EMAIL_WA_SIN_AGENTE = parse_emails("DETRACTOR_EMAIL_WA_SIN_AGENTE")
+
+#============================================================================#
+
+
 
 # Seguridad de sesiones
 SESSION_COOKIE_HTTPONLY = True      # JS no puede leer la cookie

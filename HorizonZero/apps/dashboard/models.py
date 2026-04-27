@@ -333,12 +333,17 @@ class AuditLog(models.Model):
 # apps/core/audit.py  — helper para registrar desde cualquier view
 # ═══════════════════════════════════════════════════════════════════
 
+GRUPO_CHOICES = [
+    ("Satisfaccion",       "Satisfacción"),
+    ("OficinaDigital",     "Oficina Digital"),
+    ("PaginaWeb",          "Página Web"),
+    ("WhatsAppAgente",     "WhatsApp Agente"),
+    ("WhatsAppSinAgente",  "WhatsApp Sin Agente"),
+]
+
+
 class DetractorNotificado(models.Model):
-    """
-    Registro de detractores que ya recibieron notificación por correo.
-    Evita enviar el mismo correo dos veces.
-    """
-    respuesta_id     = models.IntegerField(unique=True)
+    respuesta_id     = models.IntegerField()  
     encuesta_id      = models.IntegerField(null=True, blank=True)
     agente           = models.CharField(max_length=255, blank=True)
     sucursal         = models.CharField(max_length=255, blank=True)
@@ -347,16 +352,23 @@ class DetractorNotificado(models.Model):
     fecha_notificado = models.DateTimeField(auto_now_add=True)
     correo_enviado   = models.BooleanField(default=True)
     error_envio      = models.CharField(max_length=500, blank=True, null=True)
+    grupo            = models.CharField(  # ← NUEVO
+        max_length=30,
+        choices=GRUPO_CHOICES,
+        default="Satisfaccion",
+        db_index=True,
+    )
 
     class Meta:
-        app_label = "dashboard"
+        app_label  = "dashboard"
         verbose_name = "Detractor notificado"
-        db_table = "dashboard_detractor_notificado"
+        db_table   = "dashboard_detractor_notificado"
+        unique_together = [("respuesta_id", "grupo")] 
 
 
 
 
-
+ 
 
 
 

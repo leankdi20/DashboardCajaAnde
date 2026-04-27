@@ -4,7 +4,29 @@ from . import views
 app_name = "dashboard"
 
 
-
+urlpatterns_perfil_agentes = [
+        # ── Perfil de Agentes ──
+        # urls.py — orden correcto
+    # ── Perfil Agentes SAT ──
+    path("encuestas/agentes/sat/",
+        views.perfil_agentes_sat_index,   name="perfil_agentes_sat_index"),
+    path("encuestas/agentes/sat/data/",
+        views.perfil_agentes_sat_data,    name="perfil_agentes_sat_data"),
+    path("encuestas/agentes/sat/<path:agente_nombre>/ajax/",
+        views.perfil_agente_sat_ajax,     name="perfil_agente_sat_ajax"),
+    path("encuestas/agentes/sat/<path:agente_nombre>/",
+        views.perfil_agente_sat_detalle,  name="perfil_agente_sat_detalle"),
+    
+    # ── Perfil Agentes OD ──
+    path("encuestas/agentes/od/",
+        views.perfil_agentes_od_index,    name="perfil_agentes_od_index"),
+    path("encuestas/agentes/od/data/",
+        views.perfil_agentes_od_data,     name="perfil_agentes_od_data"),
+    path("encuestas/agentes/od/<path:agente_nombre>/ajax/",
+        views.perfil_agente_od_ajax,      name="perfil_agente_od_ajax"),
+    path("encuestas/agentes/od/<path:agente_nombre>/",
+        views.perfil_agente_od_detalle,   name="perfil_agente_od_detalle"),
+]
 
 urlpatterns_agentes = [
     path("usuarios/agentes/",                          views.agentes_home,           name="agentes_home"),
@@ -486,6 +508,7 @@ urlpatterns = [
 
     *urlpatterns_agentes,
     *urlpatterns_logs,
+    *urlpatterns_perfil_agentes,
 ]
 
  

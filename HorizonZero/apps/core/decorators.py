@@ -3,6 +3,7 @@ from django.shortcuts import redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse
 
 
 def permiso_requerido(permiso: str, redirigir_a: str = "dashboard:home"):
@@ -15,8 +16,13 @@ def permiso_requerido(permiso: str, redirigir_a: str = "dashboard:home"):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
             if not request.user.is_authenticated:
+                # AJAX → JSON, navegación → redirect
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({"error": "Sesión expirada"}, status=401)
                 return redirect("usuarios:login")
             if not request.user.has_perm(permiso):
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({"error": "Sin permisos"}, status=403)
                 messages.error(request, "No tienes permiso para acceder a esta página.")
                 return redirect(redirigir_a)
             return view_func(request, *args, **kwargs)
