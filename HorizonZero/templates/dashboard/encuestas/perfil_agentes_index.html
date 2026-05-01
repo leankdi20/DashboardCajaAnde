@@ -144,19 +144,25 @@ function clasificacionColor(promedio) {
   return { bar: 'bg-red-500', text: 'text-red-500' };
 }
 
-function renderTarjeta(a) {
-  const col     = clasificacionColor(a.promedio);
-  const pct     = Math.round((a.promedio / ESCALA) * 100);
-  const href    = AGENTES_BASE + encodeURIComponent(a.Agente) + '/';
-  const inicial = a.Agente.charAt(0);
-  const trofeo  = a.rank_unidad === 1
-    ? `<span class="material-symbols-outlined text-amber-500 text-[18px]" title="Top 1 en su unidad">emoji_events</span>`
-    : '';
-  const escalaLabel = ESCALA === 3 ? `${a.promedio}/3` : `${a.promedio}/5`;
 
-  return `
-  <a href="${href}" target="_blank" rel="noopener noreferrer"
-     class="bg-white border border-slate-100 rounded-2xl p-5 hover:shadow-md hover:border-primary/30 transition-all group block">
+function renderTarjeta(a) {
+  const col         = clasificacionColor(a.promedio);
+  const pct         = Math.round((a.promedio / ESCALA) * 100);
+  const href        = AGENTES_BASE + encodeURIComponent(a.Agente) + '/';
+  const inicial     = a.Agente.charAt(0);
+  const escalaLabel = ESCALA === 3 ? `${a.promedio}/3` : `${a.promedio}/5`;
+  const trofeo      = a.rank_unidad === 1
+    ? `<span class="material-symbols-outlined text-amber-500 text-[18px]">emoji_events</span>`
+    : '';
+
+  const card = document.createElement('div');
+  card.className = 'bg-white border border-slate-100 rounded-2xl p-5 hover:shadow-md hover:border-primary/30 transition-all group cursor-pointer';
+  
+  card.addEventListener('click', () => { 
+      window.open(href, '_blank');
+  });
+
+  card.innerHTML = `
     <div class="flex items-center gap-3 mb-4">
       <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
         <span class="text-sm font-bold text-primary">${inicial}</span>
@@ -193,10 +199,12 @@ function renderTarjeta(a) {
     <div class="flex items-center justify-between pt-3 border-t border-slate-50">
       <span class="text-xs text-slate-400">${a.total_enc} encuestas</span>
       <span class="text-xs text-slate-400">${a.Sucursal || ''}</span>
-    </div>
-  </a>`;
+    </div>`;
+
+  return card;
 }
 
+// En cargar(), cambiá la parte que hace grid.innerHTML por esto:
 function cargar() {
   document.getElementById('spinner').classList.remove('hidden');
   document.getElementById('sin-resultados').classList.add('hidden');
@@ -205,15 +213,19 @@ function cargar() {
     .then(data => {
       document.getElementById('spinner').classList.add('hidden');
       const grid = document.getElementById('grid-agentes');
+      grid.innerHTML = '';  // limpiar
+
       if (!data.agentes || data.agentes.length === 0) {
-        grid.innerHTML = '';
         document.getElementById('sin-resultados').classList.remove('hidden');
         document.getElementById('txt-total').textContent = '0 agentes encontrados';
         return;
       }
+
       document.getElementById('txt-total').textContent =
         `${data.total} agente${data.total !== 1 ? 's' : ''} encontrado${data.total !== 1 ? 's' : ''}`;
-      grid.innerHTML = data.agentes.map(renderTarjeta).join('');
+
+      // appendChild en lugar de innerHTML — Chrome respeta target="_blank" en elementos reales
+      data.agentes.forEach(a => grid.appendChild(renderTarjeta(a)));
     })
     .catch(() => {
       document.getElementById('spinner').classList.add('hidden');

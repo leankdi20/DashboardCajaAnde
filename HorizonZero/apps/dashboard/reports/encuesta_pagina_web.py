@@ -68,6 +68,18 @@ class ReporteEncuestaPaginaWeb:
             GROUP BY v.respuesta_id
         ) t
     """
+
+    QUERY_TIMELINE = '''
+        SELECT
+            YEAR(Fecha)  AS anio,
+            MONTH(Fecha) AS mes,
+            COUNT(DISTINCT respuesta_id) AS total
+        FROM dbo.vw_reporte_encuestas_satisfaccion_pagina_web
+        WHERE Fecha IS NOT NULL
+        GROUP BY YEAR(Fecha), MONTH(Fecha)
+        ORDER BY anio ASC, mes ASC
+    '''
+
     QUERY_KPI_INFO = f"""
         SELECT
             COUNT(*) AS total_info,
@@ -84,6 +96,10 @@ class ReporteEncuestaPaginaWeb:
         {{filtro_sitio}}
     """
 
+    @classmethod
+    def obtener_timeline(cls) -> list:
+        return ReportesDBService.ejecutar_query(cls.QUERY_TIMELINE)
+    
     @classmethod
     def obtener_datos(cls, filtros: dict = None) -> list[dict]:
         filtros = filtros or {}

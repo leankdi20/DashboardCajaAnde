@@ -86,21 +86,37 @@
         {% endif %}
 
         {# Filtro fecha #}
-        <form method="GET" class="flex items-center gap-1.5 flex-shrink-0">
-          <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}"
-                 class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none focus:border-primary"
-                 onchange="this.form.submit()">
-          <span class="text-slate-300 text-xs">—</span>
-          <input type="date" name="fecha_fin" value="{{ fecha_fin }}"
-                 class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none focus:border-primary"
-                 onchange="this.form.submit()">
-          {% if fecha_inicio or fecha_fin %}
-          <a href="{% if tipo == 'sat' %}{% url 'dashboard:perfil_agente_sat_detalle' agente_nombre %}{% else %}{% url 'dashboard:perfil_agente_od_detalle' agente_nombre %}{% endif %}"
-             class="p-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors">
-            <span class="material-symbols-outlined text-[14px] text-slate-500">close</span>
-          </a>
-          {% endif %}
-        </form>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+            <button type="button" id="btn-fecha"
+                    onclick="document.getElementById('form-fecha').classList.toggle('hidden')"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 hover:border-primary transition-colors">
+                <span class="material-symbols-outlined text-[14px]">date_range</span>
+                {% if fecha_inicio or fecha_fin %}
+                    {{ fecha_inicio|default:"inicio" }} — {{ fecha_fin|default:"hoy" }}
+                {% else %}
+                    Filtrar por fecha
+                {% endif %}
+            </button>
+
+            <form method="GET" id="form-fecha"
+                  class="{% if not fecha_inicio and not fecha_fin %}hidden{% endif %} flex items-center gap-1.5">
+                <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}"
+                      min="2020-01-01" max="2030-12-31"
+                      class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none focus:border-primary"
+                      onchange="this.form.submit()">
+                <span class="text-slate-300 text-xs">—</span>
+                <input type="date" name="fecha_fin" value="{{ fecha_fin }}"
+                      min="2020-01-01" max="2030-12-31"
+                      class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none focus:border-primary"
+                      onchange="this.form.submit()">
+                {% if fecha_inicio or fecha_fin %}
+                <a href="{% if tipo == 'sat' %}{% url 'dashboard:perfil_agente_sat_detalle' agente_nombre %}{% else %}{% url 'dashboard:perfil_agente_od_detalle' agente_nombre %}{% endif %}"
+                  class="p-1.5 bg-slate-100 hover:bg-red-50 hover:border-red-200 border border-slate-200 rounded-lg transition-colors">
+                    <span class="material-symbols-outlined text-[14px] text-slate-500">close</span>
+                </a>
+                {% endif %}
+            </form>
+        </div>
 
       </div>
 

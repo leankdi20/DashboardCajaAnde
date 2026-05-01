@@ -105,6 +105,18 @@ class ReporteEncuestaWhatsapp:
         )
     """
 
+    
+    QUERY_TIMELINE = '''
+        SELECT
+            YEAR(Fecha)  AS anio,
+            MONTH(Fecha) AS mes,
+            COUNT(DISTINCT respuesta_id) AS total
+        FROM dbo.vw_reporte_encuestas_satisfaccion_WhatsApp_sin_agente
+        WHERE Fecha IS NOT NULL
+        GROUP BY YEAR(Fecha), MONTH(Fecha)
+        ORDER BY anio ASC, mes ASC
+    '''
+
     QUERY_KPIS_GLOBALES = f"""
         ;WITH calificaciones AS (
             SELECT
@@ -130,6 +142,10 @@ class ReporteEncuestaWhatsapp:
             COUNT(valor_numerico)                                     as total_satisfaccion
         FROM calificaciones
     """
+
+    @classmethod
+    def obtener_timeline(cls) -> list:
+        return ReportesDBService.ejecutar_query(cls.QUERY_TIMELINE)
 
     @classmethod
     def obtener_datos(cls, filtros: dict = None) -> list[dict]:

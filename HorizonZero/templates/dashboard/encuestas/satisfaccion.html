@@ -17,490 +17,579 @@
 {% block content %}
 <script src="{% static 'js/dashboard/tags_base.js' %}"></script>
 
+<div class="p-6 flex flex-col gap-5 h-full">
 
-<div class="p-6 flex flex-col gap-6 h-full">
 
-    <h1 class="text-lg font-bold text-on-surface">APARTADO DE FILTROS KPI'S</h1>
-    <hr/>
+    <section class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
 
-        <!-- Filtros KPI's -->
-    <!-- SECCIÓN 1: KPIs globales + filtro de sucursal -->
-    <section class="bg-white border border-slate-200 p-6 rounded-2xl">
-        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">
-            Apartado de KPIs Globales
-        </p>
+        <div class="flex items-center justify-between px-6 py-4 cursor-pointer select-none border-b border-slate-100"
+             onclick="togglePanel('kpis-panel', 'kpis-chevron')">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[18px]">dashboard</span>
+                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">KPIs Globales</h3>
+            </div>
+            <span id="kpis-chevron"
+                  class="material-symbols-outlined text-slate-400 text-[20px] transition-transform duration-200">
+                expand_more
+            </span>
+        </div>
 
-        <!-- Filtro solo de sucursal para los KPIs -->
-        <form method="GET" id="form-kpis">
-            <!-- Preservar filtros de tabla -->
-            <input type="hidden" name="agente"       value="{{ filtros.agente|default:'' }}">
-            <input type="hidden" name="unidad"       value="{{ filtros.unidad|default:'' }}">
-            <input type="hidden" name="sucursales"   value="{{ filtros.sucursal|default:'' }}">
-            <input type="hidden" name="gestion"      value="{{ filtros.gestion|default:'' }}">
-            <input type="hidden" name="nombre"       value="{{ filtros.nombre|default:'' }}">
-            <input type="hidden" name="fecha_inicio" value="{{ filtros.fecha_inicio|default:'' }}">
-            <input type="hidden" name="fecha_fin"    value="{{ filtros.fecha_fin|default:'' }}">
+        <div id="kpis-panel"
+             data-collapse-panel
+             data-collapse-chevron="kpis-chevron"
+             data-collapse-default="show"
+             class="p-6 space-y-5">
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-
-                <!-- Sucursal múltiple -->
+            {# Filtros KPIs — los cambios disparan loadKpis() directamente #}
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="flex flex-col gap-1 md:col-span-2">
-                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[14px]">location_on</span>
-                        Sucursal KPIs
+                    <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">location_on</span>Sucursal
                     </label>
-                    <select name="kpi_sucursal" id="kpi_sucursal_select" multiple
-                        class="w-full">
+                    <select id="kpi_sucursal_select" multiple class="w-full">
                         {% for op in opciones_sucursal %}
-                        <option value="{{ op.Sucursal }}" 
+                        <option value="{{ op.Sucursal }}"
                             {% if op.Sucursal in kpi_sucursales %}selected{% endif %}>
                             {{ op.Sucursal }}
                         </option>
                         {% endfor %}
                     </select>
                 </div>
-
-                <!-- Fecha inicio KPIs -->
                 <div class="flex flex-col gap-1">
-                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[14px]">calendar_today</span>
-                        Fecha inicio
+                    <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">calendar_today</span>Fecha inicio
                     </label>
-                    <input type="date" name="kpi_fecha_inicio" 
-                        value="{{ kpi_fecha_inicio|default:'' }}"
-                        onchange="this.form.submit()"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-lg text-sm px-3 py-2 outline-none"/>
+                    <input type="date" id="kpi_fecha_inicio"
+                           value="{{ kpi_fecha_inicio|default:'' }}"
+                           onchange="loadKpis()"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-lg text-sm px-3 py-2 outline-none focus:ring-2 focus:ring-primary/30"/>
                 </div>
-
-                <!-- Fecha fin KPIs -->
                 <div class="flex flex-col gap-1">
-                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[14px]">event</span>
-                        Fecha fin
+                    <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">event</span>Fecha fin
                     </label>
-                    <input type="date" name="kpi_fecha_fin"
-                        value="{{ kpi_fecha_fin|default:'' }}"
-                        onchange="this.form.submit()"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-lg text-sm px-3 py-2 outline-none"/>
-                </div>
-
-            </div>
-        </form>
-
-        <!-- KPIs -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-
-            <!-- Total encuestas -->
-            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary flex-shrink-0">
-                    <span class="material-symbols-outlined">fact_check</span>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Total Encuestas</p>
-                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.total_encuestas|default:"—" }}</p>
+                    <input type="date" id="kpi_fecha_fin"
+                           value="{{ kpi_fecha_fin|default:'' }}"
+                           onchange="loadKpis()"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-lg text-sm px-3 py-2 outline-none focus:ring-2 focus:ring-primary/30"/>
                 </div>
             </div>
 
-            <!-- Satisfacción en % -->
-            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                    <span class="material-symbols-outlined">star</span>
+            {# Fila 1: métricas principales — valores los pone renderKpis() #}
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+                <div id="kpi-total" class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">fact_check</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Total Encuestas</p>
+                        <p class="text-2xl font-black text-slate-800 kpi-val">—</p>
+                    </div>
                 </div>
-                <div>
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Satisfacción</p>
-                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.promedio_general|default:"—" }}%</p>
-                    <p class="text-xs text-slate-400">
-                        {% if kpi_sucursales %}{{ kpi_sucursales|join:", " }}{% else %}Todas las sucursales{% endif %}
-                    </p>
+
+                <div id="kpi-sat" class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">star</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Satisfacción</p>
+                        <p class="text-2xl font-black text-slate-800 kpi-val">—</p>
+                        <p class="text-[10px] text-slate-400 kpi-sub">Todas</p>
+                    </div>
                 </div>
+
+                <div id="kpi-lealtad" class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary flex-shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">volunteer_activism</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Índice de Lealtad</p>
+                        <p class="text-2xl font-black text-slate-800 kpi-val">—</p>
+                        <p class="text-[10px] text-slate-400">Recomendarían ANDE</p>
+                    </div>
+                </div>
+
+                <div id="kpi-periodo" class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">date_range</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Período</p>
+                        <p class="text-xs font-bold text-slate-700 kpi-val-inicio">{% if kpi_fecha_inicio %}{{ kpi_fecha_inicio }}{% else %}Inicio{% endif %}</p>
+                        <p class="text-xs font-bold text-slate-700 kpi-val-fin">{% if kpi_fecha_fin %}{{ kpi_fecha_fin }}{% else %}Hoy{% endif %}</p>
+                    </div>
+                </div>
+
             </div>
 
-            
+            {# Fila 2: Promotores / Pasivos / Detractores / Indicador #}
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
 
-            <!-- Lealtad -->
-            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary flex-shrink-0">
-                    <span class="material-symbols-outlined">volunteer_activism</span>
+                <div id="kpi-promotores" class="bg-green-50 p-4 rounded-xl border border-green-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-green-500 uppercase tracking-tight">Promotores</p>
+                        <p class="text-2xl font-black text-green-700 kpi-val">—</p>
+                        <p class="text-[10px] text-green-400 kpi-sub">0 respuestas</p>
+                    </div>
                 </div>
-                <div>
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Índice de Lealtad</p>
-                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.lealtad_pct|default:"—" }}%</p>
-                    <p class="text-xs text-slate-400">Recomendarían ANDE</p>
+
+                <div id="kpi-pasivos" class="bg-amber-50 p-4 rounded-xl border border-amber-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 flex-shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">sentiment_neutral</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-amber-500 uppercase tracking-tight">Pasivos</p>
+                        <p class="text-2xl font-black text-amber-700 kpi-val">—</p>
+                        <p class="text-[10px] text-amber-400 kpi-sub">0 respuestas</p>
+                    </div>
                 </div>
+
+                <div id="kpi-detractores" class="bg-red-50 p-4 rounded-xl border border-red-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500 flex-shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">sentiment_dissatisfied</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-red-500 uppercase tracking-tight">Detractores</p>
+                        <p class="text-2xl font-black text-red-700 kpi-val">—</p>
+                        <p class="text-[10px] text-red-400 kpi-sub">0 respuestas</p>
+                    </div>
+                </div>
+
+                <div id="kpi-dificultad" class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">speed</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Ind. Dificultad</p>
+                        <p class="text-2xl font-black text-slate-800 kpi-val">—</p>
+                        <p class="text-[10px] text-slate-400 kpi-sub">Todas</p>
+                    </div>
+                </div>
+
             </div>
-
-            <!-- Período -->
-            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0">
-                    <span class="material-symbols-outlined">date_range</span>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Período</p>
-                    <p class="text-1xl font-black text-on-surface">
-                        {% if kpi_fecha_inicio %}{{ kpi_fecha_inicio }}{% else %}Inicio{% endif %}
-                    </p>
-                    <p class="text-1xl font-black text-on-surface">
-                        {% if kpi_fecha_fin %}{{ kpi_fecha_fin }}{% else %}Hoy{% endif %}
-                    </p>
-                </div>
-            </div>
-            <!-- Fila 2: Promotores, Pasivos, Detractores -->
-            
-
-            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0">
-                    <span class="material-symbols-outlined">sentiment_satisfied</span>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Promotores</p>
-                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.promotores_pct|default:"0" }}%</p>
-                    <p class="text-xs text-slate-400">{{ kpis_globales.promotores|default:"0" }} — Satisfecho / Muy satisfecho</p>
-                </div>
-            </div>
-
-            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 flex-shrink-0">
-                    <span class="material-symbols-outlined">sentiment_neutral</span>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Pasivos</p>
-                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.pasivos_pct|default:"0" }}%</p>
-                    <p class="text-xs text-slate-400">{{ kpis_globales.pasivos|default:"0" }} — Ni satisfecho ni insatisfecho</p>
-                </div>
-            </div>
-
-            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-500 flex-shrink-0">
-                    <span class="material-symbols-outlined">sentiment_dissatisfied</span>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Detractores</p>
-                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.detractores_pct|default:"0" }}%</p>
-                    <p class="text-xs text-slate-400">{{ kpis_globales.detractores|default:"0" }} — Poco / Nada satisfecho</p>
-                </div>
-            </div>
-
-            {% comment %} Indicador dificultad {% endcomment %}
-            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                    <span class="material-symbols-outlined">star</span>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Indicador Dificultad</p>
-                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.indicador_dificultad|default:"—" }}%</p>
-                    <p class="text-xs text-slate-400">
-                        {% if kpi_sucursales %}{{ kpi_sucursales|join:", " }}{% else %}Todas las sucursales{% endif %}
-                    </p>
-                </div>
-            </div>
-
         </div>
     </section>
 
-    
 
-    <h1 class="text-lg font-bold text-on-surface">FILTRO Y DATOS DE ENCUESTAS</h1>
-    <hr/>
 
-    <!-- Filtros Tabla  -->
-    <!-- Filtros Tabla -->
-    <section class="bg-white border border-outline-variant/30 rounded-2xl overflow-hidden">
-        <form method="GET" id="form-filtros">
+    <section class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
 
-            <!-- Header del panel de filtros -->
-            <div class="p-4 flex justify-between items-center border-b border-outline-variant/20 cursor-pointer"
-                 id="filtros-header">
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">filter_alt</span>
-                    <h4 class="font-bold text-sm text-on-surface">Filtros de Búsqueda</h4>
-                    <!-- Tags de filtros activos en el header -->
-                    <div id="tag-container-header" class="flex flex-wrap gap-1 ml-2"></div>
-                </div>
-                <div class="flex items-center gap-3">
-                    {% if filtros.agente or filtros.unidad or filtros.sucursal or filtros.gestion or filtros.nombre or filtros.fecha_inicio or filtros.fecha_fin or filtros.clasificacion %}
-                    <a href="{% url 'dashboard:encuesta_satisfaccion' %}"
-                    onclick="event.stopPropagation()"
-                    class="text-xs font-bold text-red-500 hover:underline flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[14px]">close</span>
-                        Limpiar todo
-                    </a>
-                    {% endif %}
-                    <span id="filtros-chevron" class="material-symbols-outlined text-slate-400 transition-transform duration-200">
-                        expand_more
-                    </span>
+        <div class="flex items-center justify-between px-6 py-4 cursor-pointer select-none"
+             onclick="togglePanel('charts-panel', 'charts-chevron'); initChartsOnce();">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[18px]">show_chart</span>
+                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Evolución y distribución mensual</h3>
+            </div>
+            <span id="charts-chevron"
+                  class="material-symbols-outlined text-slate-400 text-[20px] transition-transform duration-200">
+                expand_more
+            </span>
+        </div>
+
+        <div id="charts-panel"
+             data-collapse-panel
+             data-collapse-chevron="charts-chevron"
+             data-collapse-default="hide"
+             class="px-6 pb-6 space-y-8 border-t border-slate-100 pt-5">
+            <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm text-primary">show_chart</span>
+                    Evolución Mensual de Solicitudes
+                </p>
+                <div style="height:240px;position:relative;">
+                    <canvas id="chartTimeline"></canvas>
                 </div>
             </div>
+            <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm text-primary">grid_view</span>
+                    Mapa de Calor — Solicitudes por Mes y Año
+                </p>
+                <div id="heatmapContainer" class="overflow-x-auto"></div>
+            </div>
+        </div>
+    </section>
 
-            <!-- Contenido colapsable -->
-            <div id="filtros-panel" class="p-6 space-y-4">
 
-                <!-- Fila 1: Operativo + Clasificación -->
+
+    <section class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+
+        <div class="flex items-center justify-between px-6 py-4 cursor-pointer select-none"
+             onclick="togglePanel('filtros-panel', 'filtros-chevron')">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[18px]">filter_alt</span>
+                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Filtros de Búsqueda</h3>
+                <div id="tag-container-header" class="flex flex-wrap gap-1 ml-2"></div>
+            </div>
+            <div class="flex items-center gap-3">
+                {% if filtros.agente or filtros.unidad or filtros.sucursal or filtros.gestion or filtros.nombre or filtros.fecha_inicio or filtros.fecha_fin or filtros.clasificacion %}
+                <a href="{% url 'dashboard:encuesta_satisfaccion' %}"
+                   onclick="event.stopPropagation()"
+                   class="text-xs font-bold text-red-500 hover:underline flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">close</span>
+                    Limpiar todo
+                </a>
+                {% endif %}
+                <span id="filtros-chevron"
+                      class="material-symbols-outlined text-slate-400 text-[20px] transition-transform duration-200">
+                    expand_more
+                </span>
+            </div>
+        </div>
+
+        <div id="filtros-panel"
+             data-collapse-panel
+             data-collapse-chevron="filtros-chevron"
+             data-collapse-default="{% if filtros.agente or filtros.unidad or filtros.sucursal or filtros.gestion or filtros.nombre or filtros.fecha_inicio or filtros.fecha_fin or filtros.clasificacion %}show{% else %}hide{% endif %}"
+             class="border-t border-slate-100">
+            <form method="GET" id="form-filtros" class="p-6 space-y-4">
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                    <!-- Sección Operativo -->
                     <div class="bg-slate-50 rounded-xl p-4 space-y-3">
                         <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[14px]">tune</span>
-                            Operativo
+                            <span class="material-symbols-outlined text-[14px]">tune</span>Operativo
                         </p>
-                        <div class="space-y-2">
-                            <div class="flex flex-col gap-1">
-                                <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[14px]">work</span>Gestión
-                                </label>
-                                <select name="gestion"
-                                    class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none">
-                                    <option value="">Todos</option>
-                                    {% for op in opciones_gestion %}
-                                    <option value="{{ op.Gestion }}" {% if filtros.gestion == op.Gestion %}selected{% endif %}>
-                                        {{ op.Gestion }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="flex flex-col gap-1">
-                                <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[14px]">insights</span>Clasificación
-                                </label>
-                                <select name="clasificacion"
-                                    class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none"
-                                    onchange="this.form.submit()">
-                                    <option value="">Todos</option>
-                                    <option value="promotor"  {% if filtros.clasificacion == 'promotor'  %}selected{% endif %}>😊 Promotores</option>
-                                    <option value="pasivo"    {% if filtros.clasificacion == 'pasivo'    %}selected{% endif %}>😐 Pasivos</option>
-                                    <option value="detractor" {% if filtros.clasificacion == 'detractor' %}selected{% endif %}>😞 Detractores</option>
-                                </select>
-                            </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">work</span>Gestión
+                            </label>
+                            <select name="gestion" class="w-full sat-ajax-select"
+                                    data-url="{% url 'dashboard:encuesta_satisfaccion_buscar' 'gestion' %}">
+                                {% if filtros.gestion %}<option value="{{ filtros.gestion }}" selected>{{ filtros.gestion }}</option>{% endif %}
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">insights</span>Clasificación
+                            </label>
+                            <select name="clasificacion"
+                                class="w-full bg-white border border-slate-200 rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none"
+                                onchange="this.form.submit()">
+                                <option value="">Todos</option>
+                                <option value="promotor"  {% if filtros.clasificacion == 'promotor'  %}selected{% endif %}>😊 Promotores</option>
+                                <option value="pasivo"    {% if filtros.clasificacion == 'pasivo'    %}selected{% endif %}>😐 Pasivos</option>
+                                <option value="detractor" {% if filtros.clasificacion == 'detractor' %}selected{% endif %}>😞 Detractores</option>
+                            </select>
                         </div>
                     </div>
 
-                    <!-- Sección Accionista -->
                     <div class="bg-slate-50 rounded-xl p-4 space-y-3">
                         <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[14px]">person</span>
-                            Accionista
+                            <span class="material-symbols-outlined text-[14px]">person</span>Accionista
                         </p>
-                        <div class="space-y-2">
-                            <div class="flex flex-col gap-1">
-                                <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[14px]">badge</span>Nombre
-                                </label>
-                                <select name="nombre"
-                                    class="w-full bg-white border border-slate-200 rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none">
-                                    <option value="">Todos</option>
-                                    {% for op in opciones_nombre %}
-                                    <option value="{{ op.Nombre }}" {% if filtros.nombre == op.Nombre %}selected{% endif %}>
-                                        {{ op.Nombre }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="flex flex-col gap-1">
-                                <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[14px]">tag</span>Cédula
-                                </label>
-                                <input type="text" name="cedula" value="{{ filtros.cedula|default:'' }}"
-                                    placeholder="Número de cédula"
-                                    onchange="this.form.submit()"
-                                    class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
-                            </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">badge</span>Nombre
+                            </label>
+                            <select name="nombre" class="w-full sat-ajax-select"
+                                    data-url="{% url 'dashboard:encuesta_satisfaccion_buscar' 'nombre' %}">
+                                {% if filtros.nombre %}<option value="{{ filtros.nombre }}" selected>{{ filtros.nombre }}</option>{% endif %}
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">tag</span>Cédula
+                            </label>
+                            <input type="text" name="cedula" value="{{ filtros.cedula|default:'' }}"
+                                placeholder="Número de cédula" onchange="this.form.submit()"
+                                class="w-full bg-white border border-slate-200 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
                         </div>
                     </div>
 
-                    <!-- Sección Fecha -->
                     <div class="bg-slate-50 rounded-xl p-4 space-y-3">
                         <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[14px]">date_range</span>
-                            Período
+                            <span class="material-symbols-outlined text-[14px]">date_range</span>Período
                         </p>
-                        <div class="space-y-2">
-                            <div class="flex flex-col gap-1">
-                                <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[14px]">calendar_today</span>Desde
-                                </label>
-                                <input type="date" name="fecha_inicio" value="{{ filtros.fecha_inicio|default:'' }}"
-                                    onchange="this.form.submit()"
-                                    class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
-                            </div>
-                            <div class="flex flex-col gap-1">
-                                <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[14px]">event</span>Hasta
-                                </label>
-                                <input type="date" name="fecha_fin" value="{{ filtros.fecha_fin|default:'' }}"
-                                    onchange="this.form.submit()"
-                                    class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
-                            </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">calendar_today</span>Desde
+                            </label>
+                            <input type="date" name="fecha_inicio" value="{{ filtros.fecha_inicio|default:'' }}"
+                                onchange="this.form.submit()"
+                                class="w-full bg-white border border-slate-200 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">event</span>Hasta
+                            </label>
+                            <input type="date" name="fecha_fin" value="{{ filtros.fecha_fin|default:'' }}"
+                                onchange="this.form.submit()"
+                                class="w-full bg-white border border-slate-200 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
                         </div>
                     </div>
 
                 </div>
 
-                <!-- Fila 2: Agente -->
                 <div class="bg-slate-50 rounded-xl p-4 space-y-3">
                     <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[14px]">support_agent</span>
-                        Agente
+                        <span class="material-symbols-outlined text-[14px]">support_agent</span>Agente
                     </p>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="flex flex-col gap-1">
-                            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                            <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
                                 <span class="material-symbols-outlined text-[14px]">person</span>Agente
                             </label>
-                            <select name="agente"
-                                class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none">
-                                <option value="">Todos</option>
-                                {% for op in opciones_agente %}
-                                <option value="{{ op.Agente }}" {% if filtros.agente == op.Agente %}selected{% endif %}>
-                                    {{ op.Agente }}
-                                </option>
-                                {% endfor %}
+                            <select name="agente" class="w-full sat-ajax-select"
+                                    data-url="{% url 'dashboard:encuesta_satisfaccion_buscar' 'agente' %}">
+                                {% if filtros.agente %}<option value="{{ filtros.agente }}" selected>{{ filtros.agente }}</option>{% endif %}
                             </select>
                         </div>
                         <div class="flex flex-col gap-1">
-                            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                            <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
                                 <span class="material-symbols-outlined text-[14px]">apartment</span>Unidad
                             </label>
-                            <select name="unidad"
-                                class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none">
-                                <option value="">Todos</option>
-                                {% for op in opciones_unidad %}
-                                <option value="{{ op.Unidad }}" {% if filtros.unidad == op.Unidad %}selected{% endif %}>
-                                    {{ op.Unidad }}
-                                </option>
-                                {% endfor %}
+                            <select name="unidad" class="w-full sat-ajax-select"
+                                    data-url="{% url 'dashboard:encuesta_satisfaccion_buscar' 'unidad' %}">
+                                {% if filtros.unidad %}<option value="{{ filtros.unidad }}" selected>{{ filtros.unidad }}</option>{% endif %}
                             </select>
                         </div>
                         <div class="flex flex-col gap-1">
-                            <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                            <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
                                 <span class="material-symbols-outlined text-[14px]">location_on</span>Sucursal
                             </label>
-                            <select name="sucursales"
-                                class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none">
-                                <option value="">Todos</option>
-                                {% for op in opciones_sucursal %}
-                                <option value="{{ op.Sucursal }}" {% if filtros.sucursal == op.Sucursal %}selected{% endif %}>
-                                    {{ op.Sucursal }}
-                                </option>
-                                {% endfor %}
+                            <select name="sucursales" class="w-full sat-ajax-select"
+                                    data-url="{% url 'dashboard:encuesta_satisfaccion_buscar' 'sucursal' %}">
+                                {% if filtros.sucursal %}<option value="{{ filtros.sucursal }}" selected>{{ filtros.sucursal }}</option>{% endif %}
                             </select>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tags activos -->
                 <div id="tag-container" class="flex flex-wrap gap-2 min-h-[28px]"></div>
 
-            </div>
-        </form>
-    </section>
-
-    <!-- Tabla -->
-    <section class="bg-surface-container-lowest rounded-2xl overflow-hidden flex-1 flex flex-col min-h-0">
-        <div class="p-6 flex justify-between items-center border-b border-surface-container flex-shrink-0">
-            <h4 class="font-headline font-bold text-lg text-on-surface">Registros de Encuesta</h4>
-            <a href="{% url 'dashboard:encuesta_satisfaccion_exportar' %}?agente={{ filtros.agente|default:'' }}&unidad={{ filtros.unidad|default:'' }}&clasificacion={{ filtros.clasificacion|default:'' }}&sucursal={{ filtros.sucursal|default:'' }}&gestion={{ filtros.gestion|default:'' }}&nombre={{ filtros.nombre|default:'' }}&fecha_inicio={{ filtros.fecha_inicio|default:'' }}&fecha_fin={{ filtros.fecha_fin|default:'' }}"
-            class="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-primary-dark transition-colors">
-                <span class="material-symbols-outlined">download</span>
-                Exportar Excel
-            </a>
+            </form>
         </div>
-        {% render_table table %}
     </section>
 
-    
+
+
+    <section class="bg-white border border-slate-200 rounded-2xl overflow-hidden flex-1 flex flex-col min-h-0">
+
+        <div class="px-6 py-4 flex justify-between items-center border-b border-slate-100 cursor-pointer select-none flex-shrink-0"
+             onclick="togglePanel('tabla-panel', 'tabla-chevron')">
+            <h4 class="font-bold text-base text-slate-800">Registros de Encuesta</h4>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'dashboard:encuesta_satisfaccion_exportar' %}?agente={{ filtros.agente|default:'' }}&nombre={{ filtros.nombre|default:'' }}&fecha_inicio={{ filtros.fecha_inicio|default:'' }}&fecha_fin={{ filtros.fecha_fin|default:'' }}"
+                   onclick="event.stopPropagation()"
+                   class="group flex items-center gap-0 rounded-lg overflow-hidden border border-[#1d6f42] transition-all hover:shadow-md">
+                    <span class="flex items-center justify-center w-9 h-9 bg-[#1d6f42] flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 fill-white">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8.5 17.5 10.8 14l-2.3-3.5h1.7l1.3 2.2 1.3-2.2H14l-2.3 3.5 2.3 3.5h-1.7l-1.3-2.2-1.3 2.2H8.5z"/>
+                        </svg>
+                    </span>
+                    <span class="flex items-center gap-1.5 px-3 py-2 bg-white text-[#1d6f42] text-sm font-bold group-hover:bg-[#f0faf4] transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">download</span>
+                        Exportar Excel
+                    </span>
+                </a>
+                <span id="tabla-chevron"
+                      class="material-symbols-outlined text-slate-400 text-[20px] transition-transform duration-200">
+                    expand_more
+                </span>
+            </div>
+        </div>
+
+        <div id="tabla-panel"
+             data-collapse-panel
+             data-collapse-chevron="tabla-chevron"
+             data-collapse-default="show"
+             class="overflow-x-auto">
+            {% render_table table %}
+        </div>
+
+    </section>
+
 </div>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-            const filtrosPanel = document.getElementById('filtros-panel');
-            const filtrosChevron = document.getElementById('filtros-chevron');
-            const filtrosHeader = document.getElementById('filtros-header');
+{% endblock content %}
 
-            const hayFiltros = {% if filtros.agente or filtros.unidad or filtros.sucursal or filtros.gestion or filtros.nombre or filtros.fecha_inicio or filtros.fecha_fin or filtros.clasificacion %}true{% else %}false{% endif %};
 
-            if (!hayFiltros) {
-                filtrosPanel.style.display = 'none';
-                filtrosChevron.style.transform = 'rotate(-90deg)';
-            }
-
-            filtrosHeader.addEventListener('click', function() {
-                const isHidden = filtrosPanel.style.display === 'none';
-                filtrosPanel.style.display = isHidden ? 'block' : 'none';
-                filtrosChevron.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
-            });
-        });
-</script>
 {% block scripts %}
 <script>
-   
-    $(document).ready(function() {
-        const selects = ['agente', 'unidad', 'sucursales', 'gestion', 'nombre'];
+/* ══════════════════════════════════════════════════════════════
+   URL del endpoint de KPIs — inyectada por Django
+   ══════════════════════════════════════════════════════════════ */
+var KPIS_URL = "{% url 'dashboard:encuesta_satisfaccion_kpis' %}";
 
-        selects.forEach(function(name) {
-            $('select[name="' + name + '"]').select2({
-                placeholder: "Todos",
-                allowClear: true,
-                width: '100%',
-                minimumResultsForSearch: 0,
-                dropdownParent: $('body'),
-                dropdownCssClass: 'select2-dropdown-custom',
-                language: {
-                    noResults: function() { return "Sin resultados"; },
-                    searching: function() { return "Buscando..."; }
-                }
-            }).on('change', function() {
-                $('#form-filtros').submit();
-            });
-        });
-        $('#kpi_sucursal_select').select2({
-            placeholder: "Todas las sucursales",
-            allowClear: true,
-            width: '100%',
-            closeOnSelect: false,
-            minimumResultsForSearch: Infinity,  // ← deshabilita búsqueda
-            dropdownParent: $('body'),
-            dropdownCssClass: 'select2-dropdown-custom',
+/* ══════════════════════════════════════════════════════════════
+   SELECT2 AJAX — todos los .sat-ajax-select buscan al escribir
+   ══════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function () {
+
+    $('.sat-ajax-select').each(function () {
+        var url = $(this).data('url');
+        $(this).select2({
+            placeholder:        'Escribir para buscar...',
+            allowClear:         true,
+            width:              '100%',
+            minimumInputLength: 1,
+            dropdownParent:     $('body'),
+            dropdownCssClass:   'select2-dropdown-custom',
             language: {
-                noResults: function() { return "Sin resultados"; },
+                noResults:     function () { return 'Sin resultados'; },
+                searching:     function () { return 'Buscando...'; },
+                inputTooShort: function () { return 'Escribí al menos 1 carácter'; }
+            },
+            ajax: {
+                url:     url,
+                dataType:'json',
+                delay:   250,
+                data:    function (p) { return { term: p.term || '' }; },
+                processResults: function (d) { return { results: d.results }; },
+                cache:   true
             }
-        }).on('change', function() {
-            $('#form-kpis').submit();
+        }).on('change', function () {
+            $('#form-filtros').submit();
         });
-        // Forzar estilos del buscador después de que Select2 renderice
-        $(document).on('select2:open', function() {
-            const searchField = document.querySelector('.select2-container--open .select2-search__field');
-            if (searchField) {
-                searchField.style.cssText = `
-                    display: block !important;
-                    width: 100% !important;
-                    padding: 6px 10px !important;
-                    border: 1px solid #c4c8dc !important;
-                    border-radius: 6px !important;
-                    font-size: 14px !important;
-                    outline: none !important;
-                    background-color: white !important;
-                    color: #191c24 !important;
-                    box-sizing: border-box !important;
-                    height: auto !important;
-                    opacity: 1 !important;
-                    visibility: visible !important;
-                `;
-            }
-        });
-
-        // Restaurar tags
-        {% if filtros.agente %}addTag("{{ filtros.agente }}");{% endif %}
-        {% if filtros.unidad %}addTag("{{ filtros.unidad }}");{% endif %}
-        {% if filtros.sucursal %}addTag("{{ filtros.sucursal }}");{% endif %}
-        {% if filtros.gestion %}addTag("{{ filtros.gestion }}");{% endif %}
-        {% if filtros.nombre %}addTag("{{ filtros.nombre }}");{% endif %}
-        {% if filtros.cedula %}addTag("Cédula: {{ filtros.cedula }}");{% endif %}
-        {% if filtros.fecha_inicio %}addTag("Desde: {{ filtros.fecha_inicio }}");{% endif %}
-        {% if filtros.fecha_fin %}addTag("Hasta: {{ filtros.fecha_fin }}");{% endif %}
-        {% if filtros.clasificacion %}addTag("{{ filtros.clasificacion|capfirst }}");{% endif %}
-        
-
-
     });
+
+    /* ── Select2 sucursal KPIs (multi-select estático) ─────── */
+    $('#kpi_sucursal_select').select2({
+        placeholder:             'Todas las sucursales',
+        allowClear:              true,
+        width:                   '100%',
+        closeOnSelect:           false,
+        minimumResultsForSearch: Infinity,
+        dropdownParent:          $('body'),
+        dropdownCssClass:        'select2-dropdown-custom',
+        language: { noResults: function () { return 'Sin resultados'; } }
+    }).on('change', function () {
+        loadKpis();
+    });
+
+    /* ── Estilo del campo de búsqueda de Select2 ────────────── */
+    $(document).on('select2:open', function () {
+        var f = document.querySelector('.select2-container--open .select2-search__field');
+        if (f) f.style.cssText = 'display:block!important;width:100%!important;padding:6px 10px!important;border:1px solid #c4c8dc!important;border-radius:6px!important;font-size:14px!important;outline:none!important;background:white!important;color:#191c24!important;box-sizing:border-box!important;height:auto!important;opacity:1!important;visibility:visible!important;';
+    });
+
+    /* ── Tags activos ────────────────────────────────────────── */
+    {% if filtros.agente %}addTag('{{ filtros.agente }}');{% endif %}
+    {% if filtros.unidad %}addTag('{{ filtros.unidad }}');{% endif %}
+    {% if filtros.sucursal %}addTag('{{ filtros.sucursal }}');{% endif %}
+    {% if filtros.gestion %}addTag('{{ filtros.gestion }}');{% endif %}
+    {% if filtros.nombre %}addTag('{{ filtros.nombre }}');{% endif %}
+    {% if filtros.cedula %}addTag('Cédula: {{ filtros.cedula }}');{% endif %}
+    {% if filtros.fecha_inicio %}addTag('Desde: {{ filtros.fecha_inicio }}');{% endif %}
+    {% if filtros.fecha_fin %}addTag('Hasta: {{ filtros.fecha_fin }}');{% endif %}
+    {% if filtros.clasificacion %}addTag('{{ filtros.clasificacion|capfirst }}');{% endif %}
+
+    /* ── Cargar KPIs al montar la página ────────────────────── */
+    loadKpis();
+});
+
+
+/* ══════════════════════════════════════════════════════════════
+   loadKpis() — fetch al endpoint AJAX y actualiza el DOM
+   ══════════════════════════════════════════════════════════════ */
+function loadKpis() {
+    var sucursales  = $('#kpi_sucursal_select').val() || [];
+    var fechaInicio = document.getElementById('kpi_fecha_inicio').value;
+    var fechaFin    = document.getElementById('kpi_fecha_fin').value;
+
+    var params = new URLSearchParams();
+    sucursales.forEach(function (s) { params.append('kpi_sucursal', s); });
+    if (fechaInicio) params.append('kpi_fecha_inicio', fechaInicio);
+    if (fechaFin)    params.append('kpi_fecha_fin',    fechaFin);
+
+    /* Mostrar "…" mientras carga */
+    document.querySelectorAll('.kpi-val').forEach(function (el) { el.textContent = '…'; });
+    document.querySelectorAll('.kpi-sub').forEach(function (el) { el.textContent = ''; });
+
+    fetch(KPIS_URL + '?' + params.toString())
+        .then(function (r) { return r.json(); })
+        .then(function (d) { renderKpis(d, fechaInicio, fechaFin, sucursales); })
+        .catch(function () {
+            document.querySelectorAll('.kpi-val').forEach(function (el) { el.textContent = '—'; });
+        });
+}
+
+function renderKpis(d, fechaInicio, fechaFin, sucursales) {
+    function setText(id, cls, val) {
+        var el = document.querySelector('#' + id + ' ' + cls);
+        if (el) el.textContent = val;
+    }
+
+    /* Fila 1 */
+    setText('kpi-total',   '.kpi-val', d.total_encuestas  != null ? d.total_encuestas  : '—');
+    setText('kpi-sat',     '.kpi-val', d.promedio_general != null ? d.promedio_general + '%' : '—');
+    setText('kpi-sat',     '.kpi-sub', sucursales && sucursales.length ? sucursales.join(', ') : 'Todas');
+    setText('kpi-lealtad', '.kpi-val', d.lealtad_pct      != null ? d.lealtad_pct      + '%' : '—');
+
+    /* Período */
+    var elInicio = document.querySelector('#kpi-periodo .kpi-val-inicio');
+    var elFin    = document.querySelector('#kpi-periodo .kpi-val-fin');
+    if (elInicio) elInicio.textContent = fechaInicio || 'Inicio';
+    if (elFin)    elFin.textContent    = fechaFin    || 'Hoy';
+
+    /* Fila 2 */
+    setText('kpi-promotores',  '.kpi-val', d.promotores_pct  != null ? d.promotores_pct  + '%' : '—');
+    setText('kpi-promotores',  '.kpi-sub', (d.promotores     != null ? d.promotores     : 0) + ' respuestas');
+    setText('kpi-pasivos',     '.kpi-val', d.pasivos_pct      != null ? d.pasivos_pct      + '%' : '—');
+    setText('kpi-pasivos',     '.kpi-sub', (d.pasivos         != null ? d.pasivos         : 0) + ' respuestas');
+    setText('kpi-detractores', '.kpi-val', d.detractores_pct  != null ? d.detractores_pct  + '%' : '—');
+    setText('kpi-detractores', '.kpi-sub', (d.detractores     != null ? d.detractores     : 0) + ' respuestas');
+    setText('kpi-dificultad',  '.kpi-val', d.indicador_dificultad != null ? d.indicador_dificultad + '%' : '—');
+    setText('kpi-dificultad',  '.kpi-sub', sucursales && sucursales.length ? sucursales.join(', ') : 'Todas');
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   DATOS DJANGO → GRÁFICOS
+   ══════════════════════════════════════════════════════════════ */
+window.chartTimelineData = {
+    labels: [{% for t in timeline_data %}"{{ t.label|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+    values: [{% for t in timeline_data %}{{ t.total }}{% if not forloop.last %},{% endif %}{% endfor %}]
+};
+window.chartHeatmapData = {
+    anios: [{% for a in heatmap_anios %}{{ a }}{% if not forloop.last %},{% endif %}{% endfor %}],
+    data:  {{ heatmap_json|safe }}
+};
+
+var _chartsReady = false;
+function initChartsOnce() {
+    if (_chartsReady) return;
+    _chartsReady = true;
+    _initTimeline();
+    _initHeatmap();
+}
+
+function _initTimeline() {
+    var ctx = document.getElementById('chartTimeline');
+    if (!ctx) return;
+    var d = window.chartTimelineData;
+    new Chart(ctx, {
+        type: 'line',
+        data: { labels: d.labels, datasets: [{ label: 'Encuestas', data: d.values, borderColor: '#003FB7', backgroundColor: 'rgba(0,63,183,0.07)', borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#003FB7', pointHoverRadius: 6, fill: true, tension: 0.4 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { return ' ' + c.parsed.y + ' encuestas'; } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 18 } }, y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, stepSize: 1 } } } }
+    });
+}
+
+function _initHeatmap() {
+    var container = document.getElementById('heatmapContainer');
+    if (!container) return;
+    var hd = window.chartHeatmapData;
+    var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    var maxVal = 0;
+    hd.anios.forEach(function (a) { for (var m = 1; m <= 12; m++) { var v = (hd.data[a] && hd.data[a][m]) ? hd.data[a][m] : 0; if (v > maxVal) maxVal = v; } });
+    function bg(v) { if (!v) return '#f8fafc'; var p = v/maxVal; return p>=0.85?'#003FB7':p>=0.65?'#1d4ed8':p>=0.45?'#3b82f6':p>=0.25?'#93c5fd':'#dbeafe'; }
+    function fg(v) { return (!v||v/maxVal<0.45)?'#1e3a8a':'#ffffff'; }
+    var html = '<table style="border-collapse:separate;border-spacing:3px;width:100%;min-width:700px;"><thead><tr><th style="width:50px;"></th>';
+    meses.forEach(function (m) { html += '<th style="text-align:center;font-size:11px;font-weight:600;color:#94a3b8;padding:4px 2px;">'+m+'</th>'; });
+    html += '</tr></thead><tbody>';
+    hd.anios.forEach(function (a) {
+        html += '<tr><td style="font-size:12px;font-weight:700;color:#475569;padding:4px 8px 4px 0;white-space:nowrap;">'+a+'</td>';
+        for (var m = 1; m <= 12; m++) { var v=(hd.data[a]&&hd.data[a][m])?hd.data[a][m]:0; html+='<td style="background:'+bg(v)+';color:'+fg(v)+';text-align:center;font-size:11px;font-weight:600;border-radius:5px;padding:6px 4px;min-width:44px;" title="'+meses[m-1]+' '+a+': '+(v||0)+' encuestas">'+(v||'')+'</td>'; }
+        html += '</tr>';
+    });
+    html += '</tbody><tfoot><tr><td colspan="13" style="padding-top:8px;text-align:right;"><span style="font-size:10px;color:#94a3b8;margin-right:6px;">Menos</span>';
+    ['#f8fafc','#dbeafe','#93c5fd','#3b82f6','#1d4ed8','#003FB7'].forEach(function(c){html+='<span style="display:inline-block;width:16px;height:16px;background:'+c+';border-radius:3px;margin-right:2px;vertical-align:middle;"></span>';});
+    html += '<span style="font-size:10px;color:#94a3b8;margin-left:4px;">Más</span></td></tr></tfoot></table>';
+    container.innerHTML = html;
+}
 </script>
 {% endblock scripts %}
-{% endblock content %}

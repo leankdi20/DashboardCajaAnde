@@ -65,6 +65,8 @@ urlpatterns = [
     path("encuestas/satisfaccion/<int:respuesta_id>/exportar/", 
         views.encuesta_satisfaccion_detalle_exportar, name="encuesta_satisfaccion_detalle_exportar"),
     path("encuestas/satisfaccion/exportar/", views.encuesta_satisfaccion_exportar, name="encuesta_satisfaccion_exportar"),
+    path('encuestas/satisfaccion/buscar/<str:campo>/', views.encuesta_satisfaccion_buscar, name='encuesta_satisfaccion_buscar'),
+    path('encuestas/satisfaccion/kpis/',              views.encuesta_satisfaccion_kpis,    name='encuesta_satisfaccion_kpis'),
 
 
 

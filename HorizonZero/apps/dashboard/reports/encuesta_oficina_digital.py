@@ -74,6 +74,17 @@ class ReporteEncuestaOficinaDigital:
         WHERE respuesta_id = %s
     """
 
+    QUERY_TIMELINE = '''
+        SELECT
+            YEAR(Fecha)  AS anio,
+            MONTH(Fecha) AS mes,
+            COUNT(DISTINCT respuesta_id) AS total
+        FROM dbo.vw_reporte_encuestas_satisfaccion_oficina_digital
+        WHERE Fecha IS NOT NULL
+        GROUP BY YEAR(Fecha), MONTH(Fecha)
+        ORDER BY anio ASC, mes ASC
+    '''
+
     QUERY_KPIS_GLOBALES = f"""
         SELECT
             COUNT(DISTINCT respuesta_id) as total_encuestas,
@@ -89,6 +100,10 @@ class ReporteEncuestaOficinaDigital:
         WHERE Respuesta IN ('Excelente','Regular','Malo')
         {{filtros}}
     """
+
+    @classmethod
+    def obtener_timeline(cls) -> list:
+        return ReportesDBService.ejecutar_query(cls.QUERY_TIMELINE)
 
     @classmethod
     def obtener_datos(cls, filtros: dict = None) -> list[dict]:
