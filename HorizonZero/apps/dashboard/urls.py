@@ -83,6 +83,9 @@ urlpatterns = [
     path("encuestas/satisfaccion_of_dig/exportar/",     
             views.encuesta_satisfaccion_of_dig_exportar, 
             name="encuesta_satisfaccion_oficina_exportar"),
+    path("encuestas/satisfaccion_of_dig/buscar/<str:campo>/",
+     views.encuesta_oficina_digital_buscar,
+     name="encuesta_oficina_digital_buscar"),
 
 
 

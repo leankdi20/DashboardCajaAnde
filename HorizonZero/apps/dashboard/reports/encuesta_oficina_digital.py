@@ -5,48 +5,85 @@ class ReporteEncuestaOficinaDigital:
 
     VISTA = "dbo.vw_reporte_encuestas_satisfaccion_oficina_digital"
 
-    QUERY = f"SELECT * FROM {VISTA} ORDER BY Fecha DESC"
+    # ── Valor numérico por respuesta ─────────────────────────────
+    _CASE_RESPUESTA = """
+        CASE Respuesta
+            WHEN 'Excelente' THEN 3
+            WHEN 'Regular'   THEN 2
+            WHEN 'Malo'      THEN 1
+            ELSE NULL
+        END
+    """
 
-    QUERY_FILTRADO = f"""
-        SELECT * FROM {VISTA}
-        WHERE 1=1
-        {{filtros}}
-        ORDER BY Fecha DESC
+    QUERY = f"SELECT * FROM dbo.vw_reporte_encuestas_satisfaccion_oficina_digital ORDER BY Fecha DESC"
+
+    QUERY_FILTRADO = """
+        WITH base AS (
+            SELECT *
+            FROM dbo.vw_reporte_encuestas_satisfaccion_oficina_digital
+            WHERE 1=1
+            {filtros_base}
+        ),
+        promedios AS (
+            SELECT
+                respuesta_id,
+                AVG(CAST(
+                    CASE Respuesta
+                        WHEN 'Excelente' THEN 3
+                        WHEN 'Regular'   THEN 2
+                        WHEN 'Malo'      THEN 1
+                        ELSE NULL
+                    END AS FLOAT
+                )) AS promedio_enc
+            FROM base
+            WHERE Respuesta IN ('Excelente','Regular','Malo')
+            GROUP BY respuesta_id
+        ),
+        metadatos AS (
+            SELECT
+                respuesta_id,
+                MAX(encuesta_id) AS encuesta_id,
+                MAX(Fecha)       AS Fecha,
+                
+                MAX(Cedula)      AS Cedula,
+                MAX(Nombre)      AS Nombre,
+                MAX(Agente)      AS Agente
+            FROM base
+            GROUP BY respuesta_id
+        )
+        SELECT
+            m.respuesta_id, m.encuesta_id, m.Fecha, 
+            m.Cedula, m.Nombre, m.Agente,
+            p.promedio_enc,
+            CASE
+                WHEN p.promedio_enc >= 2.5 THEN 'promotor'
+                WHEN p.promedio_enc >= 2   THEN 'pasivo'
+                WHEN p.promedio_enc <  2   THEN 'detractor'
+                ELSE NULL
+            END AS clasificacion
+        FROM metadatos m
+        JOIN promedios p ON m.respuesta_id = p.respuesta_id
+        {filtro_clasificacion}
+        ORDER BY m.Fecha DESC
     """
 
     QUERY_DETALLE = f"""
-        SELECT * FROM {VISTA}
+        SELECT * FROM dbo.vw_reporte_encuestas_satisfaccion_oficina_digital
         WHERE respuesta_id = %s
         ORDER BY orden
     """
 
     QUERY_PROMEDIO_AGENTE = f"""
-        SELECT 
-            COUNT(DISTINCT respuesta_id) as total_encuestas,
+        SELECT
+            COUNT(DISTINCT respuesta_id) AS total_encuestas,
             AVG(CAST(
-                CASE 
-                    WHEN Pregunta = '¿Cómo valora la atención que le brindó el ejecutivo de servicio?' THEN
-                        CASE Respuesta
-                            WHEN 'Excelente' THEN 3
-                            WHEN 'Regular'   THEN 2
-                            WHEN 'Malo'      THEN 1
-                            ELSE NULL
-                        END
-                    WHEN Pregunta = '¿Cómo valora el espacio físico asignado para la oficina digital?' THEN
-                        CASE Respuesta
-                            WHEN 'Excelente' THEN 3
-                            WHEN 'Regular'   THEN 2
-                            WHEN 'Malo'      THEN 1
-                            ELSE NULL
-                        END
-                    WHEN Pregunta = '¿Cómo califica la velocidad de internet para realizar sus trámites en la Oficina Digital?' THEN
-                        CASE Respuesta
-                            WHEN 'Excelente' THEN 3
-                            WHEN 'Regular'   THEN 2
-                            WHEN 'Malo'      THEN 1
-                            ELSE NULL
-                        END
-                    WHEN Pregunta = '¿Cómo fue su experiencia al realizar sus gestiones en la Oficina Digital?' THEN
+                CASE
+                    WHEN Pregunta IN (
+                        '¿Cómo valora la atención que le brindó el ejecutivo de servicio?',
+                        '¿Cómo valora el espacio físico asignado para la oficina digital?',
+                        '¿Cómo califica la velocidad de internet para realizar sus trámites en la Oficina Digital?',
+                        '¿Cómo fue su experiencia al realizar sus gestiones en la Oficina Digital?'
+                    ) THEN
                         CASE Respuesta
                             WHEN 'Excelente' THEN 3
                             WHEN 'Regular'   THEN 2
@@ -55,51 +92,72 @@ class ReporteEncuestaOficinaDigital:
                         END
                     ELSE NULL
                 END AS FLOAT
-            )) as promedio_agente
-        FROM {VISTA}
+            )) AS promedio_agente
+        FROM dbo.vw_reporte_encuestas_satisfaccion_oficina_digital
         WHERE Agente = %s
     """
 
     QUERY_PROMEDIO_ENCUESTA = f"""
-        SELECT 
+        SELECT
             AVG(CAST(
                 CASE Respuesta
-                        WHEN 'Excelente' THEN 3
-                        WHEN 'Regular'   THEN 2
-                        WHEN 'Malo'      THEN 1
+                    WHEN 'Excelente' THEN 3
+                    WHEN 'Regular'   THEN 2
+                    WHEN 'Malo'      THEN 1
                     ELSE NULL
                 END AS FLOAT
-            )) as promedio_encuesta
-        FROM {VISTA}
+            )) AS promedio_encuesta
+        FROM dbo.vw_reporte_encuestas_satisfaccion_oficina_digital
         WHERE respuesta_id = %s
     """
 
-    QUERY_TIMELINE = '''
+    QUERY_TIMELINE = """
         SELECT
-            YEAR(Fecha)  AS anio,
-            MONTH(Fecha) AS mes,
+            YEAR(Fecha)                  AS anio,
+            MONTH(Fecha)                 AS mes,
             COUNT(DISTINCT respuesta_id) AS total
         FROM dbo.vw_reporte_encuestas_satisfaccion_oficina_digital
         WHERE Fecha IS NOT NULL
         GROUP BY YEAR(Fecha), MONTH(Fecha)
         ORDER BY anio ASC, mes ASC
-    '''
+    """
 
-    QUERY_KPIS_GLOBALES = f"""
-        SELECT
-            COUNT(DISTINCT respuesta_id) as total_encuestas,
-            AVG(CAST(
-                CASE Respuesta
+    # ── KPIs globales — promotores/pasivos/detractores por promedio de encuesta ──
+    QUERY_KPIS_GLOBALES = """
+        WITH base AS (
+            SELECT *
+            FROM dbo.vw_reporte_encuestas_satisfaccion_oficina_digital
+            WHERE Respuesta IN ('Excelente', 'Regular', 'Malo')
+            {filtros}
+        ),
+        promedios AS (
+            SELECT
+                respuesta_id,
+                AVG(CAST(
+                    CASE Respuesta
                         WHEN 'Excelente' THEN 3
                         WHEN 'Regular'   THEN 2
                         WHEN 'Malo'      THEN 1
-                    ELSE NULL
-                END AS FLOAT
-            )) as promedio_general
-        FROM {VISTA}
-        WHERE Respuesta IN ('Excelente','Regular','Malo')
-        {{filtros}}
+                        ELSE NULL
+                    END AS FLOAT
+                )) AS promedio_enc
+            FROM base
+            GROUP BY respuesta_id
+        )
+        SELECT
+            COUNT(*)                                                       AS total_encuestas,
+            AVG(CAST(promedio_enc AS FLOAT))                               AS promedio_general,
+            SUM(CASE WHEN promedio_enc >= 2.5 THEN 1 ELSE 0 END)          AS promotores,
+            SUM(CASE WHEN promedio_enc >= 2 AND promedio_enc < 2.5
+                     THEN 1 ELSE 0 END)                                    AS pasivos,
+            SUM(CASE WHEN promedio_enc < 2  THEN 1 ELSE 0 END)            AS detractores,
+            COUNT(*)                                                       AS total_clasificados
+        FROM promedios
     """
+
+    # ─────────────────────────────────────────────────────────────
+    # MÉTODOS
+    # ─────────────────────────────────────────────────────────────
 
     @classmethod
     def obtener_timeline(cls) -> list:
@@ -107,40 +165,45 @@ class ReporteEncuestaOficinaDigital:
 
     @classmethod
     def obtener_datos(cls, filtros: dict = None) -> list[dict]:
-        if not filtros or not any(filtros.values()):
-            return ReportesDBService.ejecutar_query(cls.QUERY)
+        condiciones_base, params = [], []
 
-        condiciones = []
-        params = []
+        if filtros:
+            if filtros.get("agente"):
+                condiciones_base.append("AND Agente = %s")
+                params.append(filtros["agente"])
+            if filtros.get("nombre"):
+                condiciones_base.append("AND Nombre = %s")
+                params.append(filtros["nombre"])
+            if filtros.get("cedula"):
+                condiciones_base.append("AND Cedula = %s")
+                params.append(filtros["cedula"])
+            if filtros.get("fecha_inicio"):
+                condiciones_base.append("AND Fecha >= %s")
+                params.append(filtros["fecha_inicio"])
+            if filtros.get("fecha_fin"):
+                condiciones_base.append("AND Fecha <= %s")
+                params.append(filtros["fecha_fin"] + " 23:59:59")
 
-        if filtros.get("agente"):
-            condiciones.append("AND Agente = %s")
-            params.append(filtros["agente"])
-        if filtros.get("nombre"):
-            condiciones.append("AND Nombre = %s")
-            params.append(filtros["nombre"])
-        if filtros.get("cedula"):
-            condiciones.append("AND Cedula = %s")
-            params.append(filtros["cedula"])
-        if filtros.get("fecha_inicio"):
-            condiciones.append("AND Fecha >= %s")
-            params.append(filtros["fecha_inicio"])
-        if filtros.get("fecha_fin"):
-            condiciones.append("AND Fecha <= %s")
-            params.append(filtros["fecha_fin"] + " 23:59:59")
+        filtro_clasificacion = ""
+        if filtros:
+            c = filtros.get("clasificacion")
+            if c == "promotor":
+                filtro_clasificacion = "WHERE p.promedio_enc >= 2.5"
+            elif c == "pasivo":
+                filtro_clasificacion = "WHERE p.promedio_enc >= 2 AND p.promedio_enc < 2.5"
+            elif c == "detractor":
+                filtro_clasificacion = "WHERE p.promedio_enc < 2"
 
-        sql = cls.QUERY_FILTRADO.format(filtros=" ".join(condiciones))
+        sql = cls.QUERY_FILTRADO.format(
+            filtros_base=" ".join(condiciones_base),
+            filtro_clasificacion=filtro_clasificacion,
+        )
         return ReportesDBService.ejecutar_query(sql, params)
 
     @classmethod
     def obtener_datos_agrupados(cls, filtros: dict = None) -> list[dict]:
-        datos = cls.obtener_datos(filtros)
-        vistos = {}
-        for fila in datos:
-            rid = fila["respuesta_id"]
-            if rid not in vistos:
-                vistos[rid] = fila
-        return list(vistos.values())
+        # La query ya retorna una fila por encuesta via CTE
+        return cls.obtener_datos(filtros)
 
     @classmethod
     def obtener_detalle(cls, respuesta_id: int) -> list[dict]:
@@ -164,11 +227,14 @@ class ReporteEncuestaOficinaDigital:
         return 0
 
     @classmethod
-    def obtener_kpis_globales(cls, sucursales: list = None, fecha_inicio: str = None, fecha_fin: str = None) -> dict:
-        condiciones = []
-        params = []
+    def obtener_kpis_globales(
+        cls,
+        sucursales: list = None,
+        fecha_inicio: str = None,
+        fecha_fin: str = None,
+    ) -> dict:
+        condiciones, params = [], []
 
-        
         if fecha_inicio:
             condiciones.append("AND Fecha >= %s")
             params.append(fecha_inicio)
@@ -176,15 +242,26 @@ class ReporteEncuestaOficinaDigital:
             condiciones.append("AND Fecha <= %s")
             params.append(fecha_fin + " 23:59:59")
 
-        sql = cls.QUERY_KPIS_GLOBALES.format(filtros=" ".join(condiciones))
+        sql      = cls.QUERY_KPIS_GLOBALES.format(filtros=" ".join(condiciones))
         resultado = ReportesDBService.ejecutar_query(sql, params)
 
         if not resultado:
             return {}
 
-        r = resultado[0]
-        promedio = r.get("promedio_general") or 0
+        r              = resultado[0]
+        promedio       = r.get("promedio_general") or 0
+        promotores     = r.get("promotores")       or 0
+        pasivos        = r.get("pasivos")           or 0
+        detractores    = r.get("detractores")       or 0
+        total          = r.get("total_clasificados") or 1
+
         return {
             "total_encuestas":  r.get("total_encuestas", 0),
-            "promedio_general": round((promedio / 3) * 100) if promedio else 0,  # ← /3 no /5
+            "promedio_general": round((promedio / 3) * 100) if promedio else 0,
+            "promotores":       promotores,
+            "promotores_pct":   round((promotores  / total) * 100) if total else 0,
+            "pasivos":          pasivos,
+            "pasivos_pct":      round((pasivos     / total) * 100) if total else 0,
+            "detractores":      detractores,
+            "detractores_pct":  round((detractores / total) * 100) if total else 0,
         }

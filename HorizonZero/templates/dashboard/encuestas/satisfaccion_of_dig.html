@@ -2,14 +2,14 @@
 {% load static %}
 {% load django_tables2 %}
 
-{% block title %}Encuesta de Satisfacción{% endblock title %}
+{% block title %}Encuesta de Satisfacción — Oficina Digital{% endblock title %}
 
 {% block breadcrumb %}
 <span>Reportes</span>
 <span class="material-symbols-outlined text-[10px]">chevron_right</span>
 <span>Encuestas</span>
 <span class="material-symbols-outlined text-[10px]">chevron_right</span>
-<span class="text-primary">Satisfacción</span>
+<span class="text-primary">Satisfacción Oficina Digital</span>
 {% endblock breadcrumb %}
 
 {% block page_title %}Encuesta de Satisfacción Oficina Digital{% endblock page_title %}
@@ -17,432 +17,451 @@
 {% block content %}
 <script src="{% static 'js/dashboard/tags_base.js' %}"></script>
 
-<div class="p-6 flex flex-col gap-6 h-full">
+<div class="p-6 flex flex-col gap-5 h-full">
 
-    <h1 class="text-lg font-bold text-on-surface">APARTADO DE FILTROS KPI'S</h1>
-    <hr/>
 
-        <!-- Filtros KPI's -->
-    <!-- SECCIÓN 1: KPIs globales + filtro de sucursal -->
-    <section class="bg-white border border-slate-200 p-6 rounded-2xl">
-        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">
-            Apartado de KPIs Globales
-        </p>
+    <section class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
 
-        
-
-        <!-- KPIs -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-
-             <!-- Total encuestas -->
-            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary flex-shrink-0">
-                    <span class="material-symbols-outlined">fact_check</span>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Total Encuestas</p>
-                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.total_encuestas|default:"—" }}</p>
-                </div>
+        <div class="flex items-center justify-between px-6 py-4 cursor-pointer select-none border-b border-slate-100"
+             onclick="togglePanel('kpis-panel', 'kpis-chevron')">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[18px]">dashboard</span>
+                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">KPIs Globales</h3>
             </div>
-            <!-- Satisfacción en % -->
-            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                    <span class="material-symbols-outlined">star</span>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Satisfacción</p>
-                    <p class="text-2xl font-black text-on-surface">{{ kpis_globales.promedio_general|default:"—" }}%</p>
-                    <p class="text-xs text-slate-400">
-                        {% if kpi_sucursales %}{{ kpi_sucursales|join:", " }}{% else %}Todas las sucursales{% endif %}
-                    </p>
-                </div>
-            </div>
-
-           
-
-        </div>
-
-        {# ── Separador ── #}
-        <div class="mt-6 border-t border-slate-100 pt-5">
-        
-            {# ── Header colapsable ── #}
-            <div id="charts-header"
-                class="flex items-center justify-between cursor-pointer select-none mb-0"
-                onclick="toggleCharts()">
-                <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary text-[18px]">show_chart</span>
-                <p class="text-xs font-bold text-slate-600 uppercase tracking-wider">
-                    Evolución y distribución mensual
-                </p>
-                </div>
-                <span id="charts-chevron"
-                    class="material-symbols-outlined text-slate-400 text-[18px] transition-transform duration-200"
-                    style="transform:rotate(-90deg)">
+            <span id="kpis-chevron"
+                  class="material-symbols-outlined text-slate-400 text-[20px] transition-transform duration-200">
                 expand_more
+            </span>
+        </div>
+
+        <div id="kpis-panel"
+             data-collapse-panel
+             data-collapse-chevron="kpis-chevron"
+             data-collapse-default="show"
+             class="p-6 space-y-4">
+
+            {# Filtros de fecha para KPIs #}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">calendar_today</span>Fecha inicio
+                    </label>
+                    <input type="date" id="kpi_fecha_inicio"
+                           value="{{ kpi_fecha_inicio|default:'' }}"
+                           onchange="loadKpis()"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-lg text-sm px-3 py-2 outline-none focus:ring-2 focus:ring-primary/30"/>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">event</span>Fecha fin
+                    </label>
+                    <input type="date" id="kpi_fecha_fin"
+                           value="{{ kpi_fecha_fin|default:'' }}"
+                           onchange="loadKpis()"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-lg text-sm px-3 py-2 outline-none focus:ring-2 focus:ring-primary/30"/>
+                </div>
+            </div>
+
+            {# Fila 1: Total + Satisfacción + Período #}
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+
+                <div id="kpi-total" class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">fact_check</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Total Encuestas</p>
+                        <p class="text-2xl font-black text-slate-800 kpi-val">{{ kpis_globales.total_encuestas|default:"—" }}</p>
+                    </div>
+                </div>
+
+                <div id="kpi-sat" class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">star</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Satisfacción</p>
+                        <p class="text-2xl font-black text-slate-800 kpi-val">{{ kpis_globales.promedio_general|default:"—" }}%</p>
+                        <p class="text-[10px] text-slate-400">Escala 1-3</p>
+                    </div>
+                </div>
+
+                <div id="kpi-periodo" class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">date_range</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Período</p>
+                        <p class="text-xs font-bold text-slate-700 kpi-val-inicio">{% if kpi_fecha_inicio %}{{ kpi_fecha_inicio }}{% else %}Inicio{% endif %}</p>
+                        <p class="text-xs font-bold text-slate-700 kpi-val-fin">{% if kpi_fecha_fin %}{{ kpi_fecha_fin }}{% else %}Hoy{% endif %}</p>
+                    </div>
+                </div>
+
+            </div>
+
+            {# Fila 2: Promotores / Pasivos / Detractores #}
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+
+                <div id="kpi-promotores" class="bg-green-50 p-4 rounded-xl border border-green-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-green-500 uppercase tracking-tight">Excelente</p>
+                        <p class="text-2xl font-black text-green-700 kpi-val">{{ kpis_globales.promotores_pct|default:"—" }}%</p>
+                        <p class="text-[10px] text-green-400 kpi-sub">{{ kpis_globales.promotores|default:0 }} encuestas</p>
+                    </div>
+                </div>
+
+                <div id="kpi-pasivos" class="bg-amber-50 p-4 rounded-xl border border-amber-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 flex-shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">sentiment_neutral</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-amber-500 uppercase tracking-tight">Regular</p>
+                        <p class="text-2xl font-black text-amber-700 kpi-val">{{ kpis_globales.pasivos_pct|default:"—" }}%</p>
+                        <p class="text-[10px] text-amber-400 kpi-sub">{{ kpis_globales.pasivos|default:0 }} encuestas</p>
+                    </div>
+                </div>
+
+                <div id="kpi-detractores" class="bg-red-50 p-4 rounded-xl border border-red-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500 flex-shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">sentiment_dissatisfied</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-red-500 uppercase tracking-tight">Malo</p>
+                        <p class="text-2xl font-black text-red-700 kpi-val">{{ kpis_globales.detractores_pct|default:"—" }}%</p>
+                        <p class="text-[10px] text-red-400 kpi-sub">{{ kpis_globales.detractores|default:0 }} encuestas</p>
+                    </div>
+                </div>
+
+            </div>
+
+            {# Gráficos — colapsables #}
+            <div class="border-t border-slate-100 pt-4">
+                <div class="flex items-center justify-between cursor-pointer select-none"
+                     onclick="togglePanel('charts-panel', 'charts-chevron')">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary text-[18px]">show_chart</span>
+                        <p class="text-xs font-bold text-slate-600 uppercase tracking-wider">Evolución y distribución mensual</p>
+                    </div>
+                    <span id="charts-chevron"
+                          class="material-symbols-outlined text-slate-400 text-[18px] transition-transform duration-200">
+                        expand_more
+                    </span>
+                </div>
+
+                <div id="charts-panel"
+                     data-collapse-panel
+                     data-collapse-chevron="charts-chevron"
+                     data-collapse-default="hide"
+                     class="mt-5 space-y-8">
+
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm text-primary">show_chart</span>
+                            Evolución Mensual
+                        </p>
+                        <div style="height:240px;position:relative;">
+                            <canvas id="chartTimeline"></canvas>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm text-primary">grid_view</span>
+                            Mapa de Calor
+                        </p>
+                        <div id="heatmapContainer" class="overflow-x-auto"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <section class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+
+        <div class="flex items-center justify-between px-6 py-4 cursor-pointer select-none"
+             onclick="togglePanel('filtros-panel', 'filtros-chevron')">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[18px]">filter_alt</span>
+                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Filtros de Búsqueda</h3>
+                <div id="tag-container-header" class="flex flex-wrap gap-1 ml-2"></div>
+            </div>
+            <div class="flex items-center gap-3">
+                {% if filtros.agente or filtros.nombre or filtros.cedula or filtros.fecha_inicio or filtros.fecha_fin or filtros.clasificacion %}
+                <a href="{% url 'dashboard:encuesta_satisfaccion_oficina' %}"
+                   onclick="event.stopPropagation()"
+                   class="text-xs font-bold text-red-500 hover:underline flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">close</span>
+                    Limpiar todo
+                </a>
+                {% endif %}
+                <span id="filtros-chevron"
+                      class="material-symbols-outlined text-slate-400 text-[20px] transition-transform duration-200">
+                    expand_more
                 </span>
             </div>
-            
-            {# ── Contenido colapsable ── #}
-            <div id="charts-panel" class="hidden mt-5 space-y-8">
-            
-                {# ── 1. Timeline ── #}
-                <div>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">
-                    <span class="material-symbols-outlined text-sm text-primary">show_chart</span>
-                    Evolución Mensual de Solicitudes
-                </p>
-                <div style="height:240px; position:relative;">
-                    <canvas id="chartTimeline"></canvas>
+        </div>
+
+        <div id="filtros-panel"
+             data-collapse-panel
+             data-collapse-chevron="filtros-chevron"
+             data-collapse-default="{% if filtros.agente or filtros.nombre or filtros.cedula or filtros.fecha_inicio or filtros.fecha_fin or filtros.clasificacion %}show{% else %}hide{% endif %}"
+             class="border-t border-slate-100">
+            <form method="GET" id="form-filtros" class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">person</span>Agente
+                        </label>
+                        <select name="agente" class="w-full od-ajax-select"
+                                data-url="{% url 'dashboard:encuesta_oficina_digital_buscar' 'agente' %}">
+                            {% if filtros.agente %}<option value="{{ filtros.agente }}" selected>{{ filtros.agente }}</option>{% endif %}
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">badge</span>Accionista
+                        </label>
+                        <select name="nombre" class="w-full od-ajax-select"
+                                data-url="{% url 'dashboard:encuesta_oficina_digital_buscar' 'nombre' %}">
+                            {% if filtros.nombre %}<option value="{{ filtros.nombre }}" selected>{{ filtros.nombre }}</option>{% endif %}
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">tag</span>Cédula
+                        </label>
+                        <input type="text" name="cedula" value="{{ filtros.cedula|default:'' }}"
+                               placeholder="Número de cédula" onchange="this.form.submit()"
+                               class="w-full bg-white border border-slate-200 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">calendar_today</span>Desde
+                        </label>
+                        <input type="date" name="fecha_inicio" value="{{ filtros.fecha_inicio|default:'' }}"
+                               onchange="this.form.submit()"
+                               class="w-full bg-white border border-slate-200 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">event</span>Hasta
+                        </label>
+                        <input type="date" name="fecha_fin" value="{{ filtros.fecha_fin|default:'' }}"
+                               onchange="this.form.submit()"
+                               class="w-full bg-white border border-slate-200 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">insights</span>Clasificación
+                        </label>
+                        <select name="clasificacion"
+                                class="w-full bg-white border border-slate-200 rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none"
+                                onchange="this.form.submit()">
+                            <option value="">Todos</option>
+                            <option value="promotor"  {% if filtros.clasificacion == 'promotor'  %}selected{% endif %}>😊 Excelente</option>
+                            <option value="pasivo"    {% if filtros.clasificacion == 'pasivo'    %}selected{% endif %}>😐 Regular</option>
+                            <option value="detractor" {% if filtros.clasificacion == 'detractor' %}selected{% endif %}>😞 Malo</option>
+                        </select>
+                    </div>
+
                 </div>
-                </div>
-            
-                {# ── 2. Heatmap ── #}
-                <div>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">
-                    <span class="material-symbols-outlined text-sm text-primary">grid_view</span>
-                    Mapa de Calor — Solicitudes por Mes y Año
-                </p>
-                <div id="heatmapContainer" class="overflow-x-auto"></div>
-                </div>
-            
+
+                <div id="tag-container" class="flex flex-wrap gap-2 mt-4 min-h-[28px]"></div>
+            </form>
+        </div>
+    </section>
+
+
+    <section class="bg-white border border-slate-200 rounded-2xl overflow-hidden flex-1 flex flex-col min-h-0">
+
+        <div class="px-6 py-4 flex justify-between items-center border-b border-slate-100 cursor-pointer select-none flex-shrink-0"
+             onclick="togglePanel('tabla-panel', 'tabla-chevron')">
+            <h4 class="font-bold text-base text-slate-800">Registros de Encuesta</h4>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'dashboard:encuesta_satisfaccion_oficina_exportar' %}?agente={{ filtros.agente|default:'' }}&nombre={{ filtros.nombre|default:'' }}&fecha_inicio={{ filtros.fecha_inicio|default:'' }}&fecha_fin={{ filtros.fecha_fin|default:'' }}"
+                   onclick="event.stopPropagation()"
+                   class="group flex items-center gap-0 rounded-lg overflow-hidden border border-[#1d6f42] transition-all hover:shadow-md">
+                    <span class="flex items-center justify-center w-9 h-9 bg-[#1d6f42] flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 fill-white">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8.5 17.5 10.8 14l-2.3-3.5h1.7l1.3 2.2 1.3-2.2H14l-2.3 3.5 2.3 3.5h-1.7l-1.3-2.2-1.3 2.2H8.5z"/>
+                        </svg>
+                    </span>
+                    <span class="flex items-center gap-1.5 px-3 py-2 bg-white text-[#1d6f42] text-sm font-bold group-hover:bg-[#f0faf4] transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">download</span>
+                        Exportar Excel
+                    </span>
+                </a>
+                <span id="tabla-chevron"
+                      class="material-symbols-outlined text-slate-400 text-[20px] transition-transform duration-200">
+                    expand_more
+                </span>
             </div>
         </div>
-    </section> 
 
-    
-
-    <h1 class="text-lg font-bold text-on-surface">APARTADO DE FILTROS LISTADO ENCUESTA</h1>
-    <hr/>
-
-    <!-- Filtros Tabla  -->
-    <section class="bg-white border border-outline-variant/30 p-7 rounded-2xl">
-        <form method="GET" id="form-filtros">
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-4">
-
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">person</span>Agente</label>
-                    <select name="agente"
-                        class="w-full bg-white dark:bg-slate-800 border border-outline-variant rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-none">
-                        <option value="">Todos</option>
-                        {% for op in opciones_agente %}
-                        <option value="{{ op.Agente }}" {% if filtros.agente == op.Agente %}selected{% endif %}>
-                            {{ op.Agente }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[14px]">badge</span>
-                        Accionista
-                    </label>
-                    <select name="nombre"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-lg text-sm px-3 py-2 appearance-none cursor-pointer focus:ring-2 focus:ring-[#003fb7]/30 focus:border-[#003fb7] focus:outline-none transition-colors">
-                        <option value="">Todos</option>
-                        {% for op in opciones_nombre %}
-                        <option value="{{ op.Nombre }}" {% if filtros.nombre == op.Nombre %}selected{% endif %}>
-                            {{ op.Nombre }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[14px]">badge</span>
-                        Cédula
-                    </label>
-                    <input type="text" name="cedula" value="{{ filtros.cedula|default:'' }}"
-                        placeholder="Número de cédula"
-                        onchange="this.form.submit()"
-                        class="w-full bg-white border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
-                </div>
-
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">calendar_today</span>Fecha inicio</label>
-                    <input type="date" name="fecha_inicio" value="{{ filtros.fecha_inicio|default:'' }}"
-                        onchange="this.form.submit()"
-                        class="w-full bg-white dark:bg-slate-800 border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
-                </div>
-
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">event</span>Fecha fin</label>
-                    <input type="date" name="fecha_fin" value="{{ filtros.fecha_fin|default:'' }}"
-                        onchange="this.form.submit()"
-                        class="w-full bg-white dark:bg-slate-800 border border-outline-variant rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary/40 outline-none"/>
-                </div>
-            </div>
-        </form>
-        
-        <!-- Tags SIEMPRE visible, fuera del if -->
-        <div id="tag-container" class="flex flex-wrap gap-2 pt-3 mt-2 border-t border-outline-variant/20 min-h-[32px]"></div>
-
-        <!-- Limpiar solo cuando hay filtros -->
-        {% if filtros.agente or filtros.unidad or filtros.sucursal or filtros.gestion or filtros.fecha_inicio or filtros.fecha_fin %}
-        <div class="pt-2 mt-2">
-            <a href="{% url 'dashboard:encuesta_satisfaccion' %}"
-            class="text-primary text-xs font-bold hover:underline">
-                Limpiar filtros
-            </a>
+        <div id="tabla-panel"
+             data-collapse-panel
+             data-collapse-chevron="tabla-chevron"
+             data-collapse-default="show"
+             class="overflow-x-auto">
+            {% render_table table %}
         </div>
-        {% endif %} 
 
     </section>
 
-    <!-- Tabla -->
-    <section class="bg-surface-container-lowest rounded-2xl overflow-hidden flex-1 flex flex-col min-h-0">
-        <div class="p-6 flex justify-between items-center border-b border-surface-container flex-shrink-0">
-            <h4 class="font-headline font-bold text-lg text-on-surface">Registros de Encuesta</h4>
-            <a href="{% url 'dashboard:encuesta_satisfaccion_oficina_exportar' %}?agente={{ filtros.agente|default:'' }}&nombre={{ filtros.nombre|default:'' }}&fecha_inicio={{ filtros.fecha_inicio|default:'' }}&fecha_fin={{ filtros.fecha_fin|default:'' }}"
-            class="group flex items-center gap-0 rounded-lg overflow-hidden border border-[#1d6f42] transition-all hover:shadow-md">
-                <span class="flex items-center justify-center w-9 h-9 bg-[#1d6f42] flex-shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 fill-white">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8.5 17.5 10.8 14l-2.3-3.5h1.7l1.3 2.2 1.3-2.2H14l-2.3 3.5 2.3 3.5h-1.7l-1.3-2.2-1.3 2.2H8.5z"/>
-                    </svg>
-                </span>
-                <span class="flex items-center gap-1.5 px-3 py-2 bg-white text-[#1d6f42] text-sm font-bold group-hover:bg-[#f0faf4] transition-colors">
-                    <span class="material-symbols-outlined text-[16px]">download</span>
-                    Exportar Excel
-                </span>
-            </a>
-        </div>
-        {% render_table table %}
-    </section>
-
-    
 </div>
+{% endblock content %}
+
+
 {% block scripts %}
 <script>
-$(document).ready(function() {
-    const selects = ['agente','nombre','cedula'];
+var KPIS_URL     = "{% url 'dashboard:encuesta_satisfaccion_kpis' %}";
 
-    selects.forEach(function(name) {
-        $('select[name="' + name + '"]').select2({
-            placeholder: "Todos",
-            allowClear: true,
-            width: '100%',
-            minimumResultsForSearch: 0,
-            dropdownParent: $('body'),
-            dropdownCssClass: 'select2-dropdown-custom',
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ── Select2 agente AJAX ──────────────────────────────────────
+    $('.od-ajax-select').each(function () {
+        var url = $(this).data('url');
+        $(this).select2({
+            placeholder:        'Escribir para buscar...',
+            allowClear:         true,
+            width:              '100%',
+            minimumInputLength: 1,
+            dropdownParent:     $('body'),
+            dropdownCssClass:   'select2-dropdown-custom',
             language: {
-                noResults: function() { return "Sin resultados"; },
-                searching: function() { return "Buscando..."; }
+                noResults:     function () { return 'Sin resultados'; },
+                searching:     function () { return 'Buscando...'; },
+                inputTooShort: function () { return 'Escribí al menos 1 carácter'; }
+            },
+            ajax: {
+                url:     url,
+                dataType:'json',
+                delay:   250,
+                data:    function (p) { return { term: p.term || '' }; },
+                processResults: function (d) { return { results: d.results }; },
+                cache:   true
             }
-        }).on('change', function() {
+        }).on('change', function () {
             $('#form-filtros').submit();
         });
     });
-    $('#kpi_sucursal_select').select2({
-        placeholder: "Todas las sucursales",
-        allowClear: true,
-        width: '100%',
-        closeOnSelect: false,
-        minimumResultsForSearch: Infinity,  // ← deshabilita búsqueda
-        dropdownParent: $('body'),
-        dropdownCssClass: 'select2-dropdown-custom',
-        language: {
-            noResults: function() { return "Sin resultados"; },
-        }
-    }).on('change', function() {
-        $('#form-kpis').submit();
-    });
-    // Forzar estilos del buscador después de que Select2 renderice
-    $(document).on('select2:open', function() {
-        const searchField = document.querySelector('.select2-container--open .select2-search__field');
-        if (searchField) {
-            searchField.style.cssText = `
-                display: block !important;
-                width: 100% !important;
-                padding: 6px 10px !important;
-                border: 1px solid #c4c8dc !important;
-                border-radius: 6px !important;
-                font-size: 14px !important;
-                outline: none !important;
-                background-color: white !important;
-                color: #191c24 !important;
-                box-sizing: border-box !important;
-                height: auto !important;
-                opacity: 1 !important;
-                visibility: visible !important;
-            `;
-        }
+
+    $(document).on('select2:open', function () {
+        var f = document.querySelector('.select2-container--open .select2-search__field');
+        if (f) f.style.cssText = 'display:block!important;width:100%!important;padding:6px 10px!important;border:1px solid #c4c8dc!important;border-radius:6px!important;font-size:14px!important;outline:none!important;background:white!important;';
     });
 
-    // Restaurar tags
-    {% if filtros.agente %}addTag("{{ filtros.agente }}");{% endif %}
-    {% if filtros.nombre %}addTag("{{ filtros.nombre }}");{% endif %}
-    {% if filtros.fecha_inicio %}addTag("Desde: {{ filtros.fecha_inicio }}");{% endif %}
-    {% if filtros.fecha_fin %}addTag("Hasta: {{ filtros.fecha_fin }}");{% endif %}
+    // ── Tags ─────────────────────────────────────────────────────
+    {% if filtros.agente %}addTag('{{ filtros.agente }}');{% endif %}
+    {% if filtros.nombre %}addTag('{{ filtros.nombre }}');{% endif %}
+    {% if filtros.cedula %}addTag('Cédula: {{ filtros.cedula }}');{% endif %}
+    {% if filtros.fecha_inicio %}addTag('Desde: {{ filtros.fecha_inicio }}');{% endif %}
+    {% if filtros.fecha_fin %}addTag('Hasta: {{ filtros.fecha_fin }}');{% endif %}
+    {% if filtros.clasificacion %}addTag('{{ filtros.clasificacion|capfirst }}');{% endif %}
 
-    
-    
+    // ── KPIs AJAX ────────────────────────────────────────────────
+    loadKpis();
 });
 
 
-// ── Datos desde Django ────────────────────────────────────────────
+function loadKpis() {
+    var fi = document.getElementById('kpi_fecha_inicio').value;
+    var ff = document.getElementById('kpi_fecha_fin').value;
+    var params = new URLSearchParams();
+    if (fi) params.append('kpi_fecha_inicio', fi);
+    if (ff) params.append('kpi_fecha_fin',    ff);
+
+    fetch(KPIS_URL + '?' + params.toString())
+        .then(function (r) { return r.json(); })
+        .then(function (d) { renderKpis(d, fi, ff); })
+        .catch(function () {});
+}
+
+function renderKpis(d, fi, ff) {
+    function set(id, cls, val) {
+        var el = document.querySelector('#' + id + ' ' + cls);
+        if (el) el.textContent = val;
+    }
+    set('kpi-total',       '.kpi-val', d.total_encuestas  != null ? d.total_encuestas  : '—');
+    set('kpi-sat',         '.kpi-val', d.promedio_general != null ? d.promedio_general + '%' : '—');
+    set('kpi-promotores',  '.kpi-val', d.promotores_pct   != null ? d.promotores_pct   + '%' : '—');
+    set('kpi-promotores',  '.kpi-sub', (d.promotores  || 0) + ' encuestas');
+    set('kpi-pasivos',     '.kpi-val', d.pasivos_pct      != null ? d.pasivos_pct      + '%' : '—');
+    set('kpi-pasivos',     '.kpi-sub', (d.pasivos     || 0) + ' encuestas');
+    set('kpi-detractores', '.kpi-val', d.detractores_pct  != null ? d.detractores_pct  + '%' : '—');
+    set('kpi-detractores', '.kpi-sub', (d.detractores || 0) + ' encuestas');
+
+    var elI = document.querySelector('#kpi-periodo .kpi-val-inicio');
+    var elF = document.querySelector('#kpi-periodo .kpi-val-fin');
+    if (elI) elI.textContent = fi || 'Inicio';
+    if (elF) elF.textContent = ff || 'Hoy';
+}
+
+
+// ── Gráficos ─────────────────────────────────────────────────────
 window.chartTimelineData = {
-  labels: [{% for t in timeline_data %}"{{ t.label|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}],
-  values: [{% for t in timeline_data %}{{ t.total }}{% if not forloop.last %},{% endif %}{% endfor %}]
+    labels: [{% for t in timeline_data %}"{{ t.label|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+    values: [{% for t in timeline_data %}{{ t.total }}{% if not forloop.last %},{% endif %}{% endfor %}]
 };
- 
 window.chartHeatmapData = {
-  anios: [{% for a in heatmap_anios %}{{ a }}{% if not forloop.last %},{% endif %}{% endfor %}],
-  data:  {{ heatmap_json|safe }}
+    anios: [{% for a in heatmap_anios %}{{ a }}{% if not forloop.last %},{% endif %}{% endfor %}],
+    data:  {{ heatmap_json|safe }}
 };
- 
-// ── Toggle colapsable ─────────────────────────────────────────────
-function toggleCharts() {
-  var panel   = document.getElementById('charts-panel');
-  var chevron = document.getElementById('charts-chevron');
-  var hidden  = panel.classList.contains('hidden');
-  panel.classList.toggle('hidden', !hidden);
-  chevron.style.transform = hidden ? 'rotate(0deg)' : 'rotate(-90deg)';
- 
-  // Inicializar gráficos la primera vez que se abre
-  if (hidden && !window._chartsInit) {
-    window._chartsInit = true;
+
+var _chartsReady = false;
+function initChartsOnce() {
+    if (_chartsReady) return;
+    _chartsReady = true;
     _initTimeline();
     _initHeatmap();
-  }
 }
- 
-// ── Timeline (Chart.js) ───────────────────────────────────────────
+
 function _initTimeline() {
-  var ctx = document.getElementById('chartTimeline');
-  if (!ctx) return;
- 
-  var d = window.chartTimelineData;
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: d.labels,
-      datasets: [{
-        label: 'Encuestas',
-        data: d.values,
-        borderColor: '#003FB7',
-        backgroundColor: 'rgba(0,63,183,0.07)',
-        borderWidth: 2.5,
-        pointRadius: 4,
-        pointBackgroundColor: '#003FB7',
-        pointHoverRadius: 6,
-        fill: true,
-        tension: 0.4,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: function(ctx) { return ' ' + ctx.parsed.y + ' encuestas'; }
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { font: { size: 10 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 18 }
-        },
-        y: {
-          beginAtZero: true,
-          grid: { color: '#f1f5f9' },
-          ticks: { font: { size: 10 }, stepSize: 1 }
-        }
-      }
-    }
-  });
+    var ctx = document.getElementById('chartTimeline');
+    if (!ctx) return;
+    var d = window.chartTimelineData;
+    new Chart(ctx, {
+        type: 'line',
+        data: { labels: d.labels, datasets: [{ label: 'Encuestas', data: d.values,
+            borderColor: '#003FB7', backgroundColor: 'rgba(0,63,183,0.07)',
+            borderWidth: 2.5, pointRadius: 4, fill: true, tension: 0.4 }] },
+        options: { responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                      y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } } } }
+    });
 }
- 
-// ── Heatmap (HTML puro, sin librería) ────────────────────────────
+
 function _initHeatmap() {
-  var container = document.getElementById('heatmapContainer');
-  if (!container) return;
- 
-  var hd    = window.chartHeatmapData;
-  var anios = hd.anios;
-  var data  = hd.data;
- 
-  var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
- 
-  // Calcular máximo para escala de color
-  var maxVal = 0;
-  anios.forEach(function(a) {
-    for (var m = 1; m <= 12; m++) {
-      var v = (data[a] && data[a][m]) ? data[a][m] : 0;
-      if (v > maxVal) maxVal = v;
-    }
-  });
- 
-  function colorCell(val) {
-    if (!val || val === 0) return '#f8fafc';
-    var pct = val / maxVal;
-    if (pct >= 0.85) return '#003FB7';
-    if (pct >= 0.65) return '#1d4ed8';
-    if (pct >= 0.45) return '#3b82f6';
-    if (pct >= 0.25) return '#93c5fd';
-    return '#dbeafe';
-  }
- 
-  function textColor(val) {
-    if (!val || val === 0) return '#94a3b8';
-    var pct = val / maxVal;
-    return pct >= 0.45 ? '#ffffff' : '#1e3a8a';
-  }
- 
-  // Construir tabla
-  var html = '<table style="border-collapse:separate;border-spacing:3px;width:100%;min-width:700px;">';
- 
-  // Header meses
-  html += '<thead><tr>';
-  html += '<th style="width:50px;"></th>';
-  meses.forEach(function(m) {
-    html += '<th style="text-align:center;font-size:11px;font-weight:600;color:#94a3b8;padding:4px 2px;">' + m + '</th>';
-  });
-  html += '</tr></thead>';
- 
-  // Filas por año
-  html += '<tbody>';
-  anios.forEach(function(a) {
-    html += '<tr>';
-    html += '<td style="font-size:12px;font-weight:700;color:#475569;padding:4px 8px 4px 0;white-space:nowrap;">' + a + '</td>';
-    for (var m = 1; m <= 12; m++) {
-      var v   = (data[a] && data[a][m]) ? data[a][m] : 0;
-      var bg  = colorCell(v);
-      var tc  = textColor(v);
-      var txt = v > 0 ? v : '';
-      html += '<td style="' +
-        'background:' + bg + ';' +
-        'color:' + tc + ';' +
-        'text-align:center;' +
-        'font-size:11px;font-weight:600;' +
-        'border-radius:5px;' +
-        'padding:6px 4px;' +
-        'min-width:44px;' +
-        'cursor:default;"' +
-        ' title="' + meses[m-1] + ' ' + a + ': ' + (v || 0) + ' encuestas">' +
-        txt + '</td>';
-    }
-    html += '</tr>';
-  });
-  html += '</tbody>';
- 
-  // Leyenda
-  html += '<tfoot><tr>';
-  html += '<td colspan="13" style="padding-top:8px;text-align:right;">';
-  html += '<span style="font-size:10px;color:#94a3b8;margin-right:6px;">Menos</span>';
-  ['#f8fafc','#dbeafe','#93c5fd','#3b82f6','#1d4ed8','#003FB7'].forEach(function(c) {
-    html += '<span style="display:inline-block;width:16px;height:16px;background:' + c + ';border-radius:3px;margin-right:2px;vertical-align:middle;"></span>';
-  });
-  html += '<span style="font-size:10px;color:#94a3b8;margin-left:4px;">Más</span>';
-  html += '</td></tr></tfoot>';
- 
-  html += '</table>';
-  container.innerHTML = html;
+    var container = document.getElementById('heatmapContainer');
+    if (!container) return;
+    var hd = window.chartHeatmapData;
+    var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    var maxVal = 0;
+    hd.anios.forEach(function(a) { for (var m=1;m<=12;m++) { var v=(hd.data[a]&&hd.data[a][m])?hd.data[a][m]:0; if(v>maxVal)maxVal=v; } });
+    function bg(v) { if(!v)return'#f8fafc'; var p=v/maxVal; return p>=0.85?'#003FB7':p>=0.65?'#1d4ed8':p>=0.45?'#3b82f6':p>=0.25?'#93c5fd':'#dbeafe'; }
+    function fg(v) { return(!v||v/maxVal<0.45)?'#1e3a8a':'#ffffff'; }
+    var html='<table style="border-collapse:separate;border-spacing:3px;width:100%;min-width:700px;"><thead><tr><th style="width:50px;"></th>';
+    meses.forEach(function(m){html+='<th style="text-align:center;font-size:11px;font-weight:600;color:#94a3b8;padding:4px 2px;">'+m+'</th>';});
+    html+='</tr></thead><tbody>';
+    hd.anios.forEach(function(a){
+        html+='<tr><td style="font-size:12px;font-weight:700;color:#475569;padding:4px 8px 4px 0;">'+a+'</td>';
+        for(var m=1;m<=12;m++){var v=(hd.data[a]&&hd.data[a][m])?hd.data[a][m]:0;html+='<td style="background:'+bg(v)+';color:'+fg(v)+';text-align:center;font-size:11px;font-weight:600;border-radius:5px;padding:6px 4px;min-width:44px;" title="'+meses[m-1]+' '+a+': '+(v||0)+' encuestas">'+(v||'')+'</td>';}
+        html+='</tr>';
+    });
+    html+='</tbody></table>';
+    container.innerHTML=html;
 }
 </script>
 {% endblock scripts %}
-{% endblock content %}

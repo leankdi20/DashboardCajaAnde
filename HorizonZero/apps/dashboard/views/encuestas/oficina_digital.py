@@ -5,7 +5,7 @@ from datetime import datetime
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 
 from apps.core.decorators import permiso_requerido
@@ -14,6 +14,33 @@ from apps.dashboard.services.db_service import ReportesDBService
 from apps.dashboard.tables import EncuestaOficinaDigitalTable
 from apps.dashboard.views._base import build_timeline_heatmap
 
+
+
+@login_required
+def encuesta_oficina_digital_buscar(request, campo):
+    CAMPOS = {
+        "agente": "Agente",
+        "nombre": "Nombre",
+    }
+    if campo not in CAMPOS:
+        return JsonResponse({"results": []})
+
+    col_db = CAMPOS[campo]
+    term   = request.GET.get("term", "").strip()
+
+    sql = f"""
+        SELECT DISTINCT TOP 30 {col_db}
+        FROM dbo.vw_reporte_encuestas_satisfaccion_oficina_digital
+        WHERE {col_db} IS NOT NULL
+          AND {col_db} LIKE %s
+        ORDER BY {col_db}
+    """
+    filas = ReportesDBService.ejecutar_query(sql, [f"%{term}%"])
+    data  = [
+        {"id": (r[col_db] or "").strip(), "text": (r[col_db] or "").strip()}
+        for r in filas if r.get(col_db)
+    ]
+    return JsonResponse({"results": data, "pagination": {"more": False}})
 
 @login_required
 @permiso_requerido("dashboard.view_encuesta_satisfaccion_oficina")
@@ -24,6 +51,7 @@ def encuesta_satisfaccion_oficina(request):
         "cedula":       request.GET.get("cedula"),
         "fecha_inicio": request.GET.get("fecha_inicio"),
         "fecha_fin":    request.GET.get("fecha_fin"),
+        "clasificacion": request.GET.get("clasificacion"),
     }
     kpi_sucursales   = request.GET.getlist("kpi_sucursal")
     kpi_fecha_inicio = request.GET.get("kpi_fecha_inicio")

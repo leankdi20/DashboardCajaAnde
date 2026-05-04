@@ -12,6 +12,7 @@ from .oficina_digital import (
     encuesta_satisfaccion_detalle_of_dig,
     encuesta_satisfaccion_of_dig_exportar,
     encuesta_satisfaccion_detalle_of_dig_exportar,
+    encuesta_oficina_digital_buscar,
 )
 from .whatsapp_agente import (
     encuesta_whatsApp_agente,
