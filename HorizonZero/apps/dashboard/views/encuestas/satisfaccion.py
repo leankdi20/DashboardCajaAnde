@@ -13,6 +13,7 @@ from apps.dashboard.services.db_service import ReportesDBService
 from apps.dashboard.tables import EncuestaSatisfaccionTable
 from apps.dashboard.views._base import build_timeline_heatmap
 from django.shortcuts import render
+from apps.dashboard.mixins import aplicar_restricciones_perfil
 
 
 CAMPOS_ENCUESTA_SAT = {
@@ -77,7 +78,7 @@ def encuesta_satisfaccion_kpis(request):
 def encuesta_satisfaccion(request):
     filtros = {
         "agente":        request.GET.get("agente"),
-        "sucursal":      request.GET.get("sucursales"),
+        "sucursal":      request.GET.get("sucursal"),
         "unidad":        request.GET.get("unidad"),
         "gestion":       request.GET.get("gestion"),
         "nombre":        request.GET.get("nombre"),
@@ -89,7 +90,10 @@ def encuesta_satisfaccion(request):
     kpi_sucursales   = request.GET.getlist("kpi_sucursal")
     kpi_fecha_inicio = request.GET.get("kpi_fecha_inicio", "")
     kpi_fecha_fin    = request.GET.get("kpi_fecha_fin", "")
-
+    filtros, unidad_forzada, sucursal_forzada = aplicar_restricciones_perfil(request, filtros)
+    print(">>> FILTROS DESPUÉS DE PERFIL:", filtros)
+    print(">>> UNIDAD FORZADA:", unidad_forzada)
+    print(">>> PERFIL USUARIO:", getattr(request.user, 'perfil', None))
     datos, opciones_sucursal = [], []
     timeline_data, heatmap_anios, heatmap_json = [], [], "{}"
 
@@ -99,6 +103,10 @@ def encuesta_satisfaccion(request):
             "SELECT DISTINCT Sucursal FROM dbo.vw_reporte_encuestas_satisfaccion "
             "WHERE Sucursal IS NOT NULL ORDER BY Sucursal"
         )
+        opciones_unidad = ReportesDBService.ejecutar_query(
+        "SELECT DISTINCT Unidad FROM dbo.vw_reporte_encuestas_satisfaccion "
+        "WHERE Unidad IS NOT NULL ORDER BY Unidad"
+    )
         raw_timeline = ReporteEncuestaSatisfaccion.obtener_timeline()
         timeline_data, heatmap_anios, heatmap_json = build_timeline_heatmap(raw_timeline)
     except Exception as e:
@@ -118,9 +126,12 @@ def encuesta_satisfaccion(request):
         "kpi_fecha_inicio":  kpi_fecha_inicio,
         "kpi_fecha_fin":     kpi_fecha_fin,
         "opciones_sucursal": opciones_sucursal,
+        "opciones_unidad":   opciones_unidad,
         "timeline_data":     timeline_data,
         "heatmap_anios":     heatmap_anios,
         "heatmap_json":      heatmap_json,
+        "unidad_forzada":   unidad_forzada,
+        "sucursal_forzada": sucursal_forzada,
     })
 
 

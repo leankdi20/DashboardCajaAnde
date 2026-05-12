@@ -21,6 +21,7 @@ from .encuestas import (
     encuesta_satisfaccion_of_dig_exportar,
     encuesta_satisfaccion_detalle_of_dig_exportar,
     encuesta_oficina_digital_buscar,
+    encuesta_oficina_digital_kpis,
     # WhatsApp Agente
     encuesta_whatsApp_agente,
     encuesta_whatsapp_agente_detalle,

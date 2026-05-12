@@ -32,7 +32,7 @@ def encuesta_oficina_digital_buscar(request, campo):
         SELECT DISTINCT TOP 30 {col_db}
         FROM dbo.vw_reporte_encuestas_satisfaccion_oficina_digital
         WHERE {col_db} IS NOT NULL
-          AND {col_db} LIKE %s
+        AND UPPER({col_db}) LIKE UPPER(%s)
         ORDER BY {col_db}
     """
     filas = ReportesDBService.ejecutar_query(sql, [f"%{term}%"])
@@ -41,6 +41,20 @@ def encuesta_oficina_digital_buscar(request, campo):
         for r in filas if r.get(col_db)
     ]
     return JsonResponse({"results": data, "pagination": {"more": False}})
+
+
+@login_required
+@permiso_requerido("dashboard.view_encuesta_satisfaccion_oficina")
+def encuesta_oficina_digital_kpis(request):
+    kpi_fecha_inicio = request.GET.get("kpi_fecha_inicio")
+    kpi_fecha_fin    = request.GET.get("kpi_fecha_fin")
+ 
+    kpis = encuesta_oficina_digital.ReporteEncuestaOficinaDigital.obtener_kpis_globales(
+        fecha_inicio=kpi_fecha_inicio or None,
+        fecha_fin=kpi_fecha_fin or None,
+    )
+    return JsonResponse(kpis)
+ 
 
 @login_required
 @permiso_requerido("dashboard.view_encuesta_satisfaccion_oficina")
@@ -57,7 +71,7 @@ def encuesta_satisfaccion_oficina(request):
     kpi_fecha_inicio = request.GET.get("kpi_fecha_inicio")
     kpi_fecha_fin    = request.GET.get("kpi_fecha_fin")
 
-    datos, opciones_agente, opciones_nombre = [], [], []
+    datos = []
     kpis_globales = {}
     timeline_data, heatmap_anios, heatmap_json = [], [], "{}"
 
@@ -67,18 +81,6 @@ def encuesta_satisfaccion_oficina(request):
             fecha_inicio=kpi_fecha_inicio,
             fecha_fin=kpi_fecha_fin,
         )
-        opciones_agente = ReportesDBService.ejecutar_query(
-            "SELECT DISTINCT Agente FROM dbo.vw_reporte_encuestas_satisfaccion_oficina_digital "
-            "WHERE Agente IS NOT NULL ORDER BY Agente"
-        )
-        try:
-            opciones_nombre = ReportesDBService.ejecutar_query(
-                "SELECT DISTINCT Nombre FROM dbo.vw_reporte_encuestas_satisfaccion_oficina_digital "
-                "WHERE Nombre IS NOT NULL ORDER BY Nombre"
-            )
-        except Exception:
-            opciones_nombre = []
-
         raw_timeline = encuesta_oficina_digital.ReporteEncuestaOficinaDigital.obtener_timeline()
         timeline_data, heatmap_anios, heatmap_json = build_timeline_heatmap(raw_timeline)
     except Exception as e:
@@ -98,8 +100,6 @@ def encuesta_satisfaccion_oficina(request):
         "kpi_sucursales":    kpi_sucursales,
         "kpi_fecha_inicio":  kpi_fecha_inicio,
         "kpi_fecha_fin":     kpi_fecha_fin,
-        "opciones_agente":   opciones_agente,
-        "opciones_nombre":   opciones_nombre,
         "timeline_data":     timeline_data,
         "heatmap_anios":     heatmap_anios,
         "heatmap_json":      heatmap_json,

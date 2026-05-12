@@ -206,11 +206,13 @@ function renderTarjeta(a) {
 
 // En cargar(), cambiá la parte que hace grid.innerHTML por esto:
 function cargar() {
+  showSpinner();
   document.getElementById('spinner').classList.remove('hidden');
   document.getElementById('sin-resultados').classList.add('hidden');
   fetch(buildUrl(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
     .then(r => r.json())
     .then(data => {
+      hideSpinner();
       document.getElementById('spinner').classList.add('hidden');
       const grid = document.getElementById('grid-agentes');
       grid.innerHTML = '';  // limpiar
