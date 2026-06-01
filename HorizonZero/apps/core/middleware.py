@@ -8,7 +8,7 @@ class LimpiarCachePermisosMiddleware:
 
     def __call__(self, request):
         if request.user.is_authenticated:
-            for attr in ('_perm_cache', '_user_perm_cache', '_group_perm_cache'):
+            for attr in ("_perm_cache", "_user_perm_cache", "_group_perm_cache"):
                 try:
                     delattr(request.user, attr)
                 except AttributeError:

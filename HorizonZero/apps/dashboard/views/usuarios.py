@@ -1,7 +1,6 @@
 # apps/dashboard/views/usuarios.py
 # ─────────────────────────────────────────────────────────────────
 # Contiene todo el CRUD de agentes + vistas de QR.
-# Se separa de logs porque son dominios distintos.
 # ─────────────────────────────────────────────────────────────────
 import base64
 import io
@@ -16,7 +15,6 @@ from django.views.decorators.http import require_POST
 
 from apps.core.decorators import permiso_requerido
 from apps.core.audit import audit
-from apps.dashboard.models import AuditLog
 from apps.dashboard.services.agentes_service import (
     AgentesService, UNIDAD_ENCUESTA, ENCUESTA_NOMBRE,
     build_encuesta_url, generar_qr_base64,
@@ -77,12 +75,18 @@ def agente_crear(request):
                         "login_ad_buscado": login_ad,
                     })
             try:
-                nuevo_id = AgentesService.crear(nombre, int(sucursal_id), int(unidad_id), login_ad or "pendiente")
-                audit(request, AuditLog.Accion.AGENTE_CREATE, AuditLog.Modulo.AGENTES,
-                      f"Creó el agente '{nombre}' (login: {login_ad or 'pendiente'})",
-                      objeto_id=nuevo_id, objeto_nombre=nombre,
-                      datos_nuevos={"nombre": nombre, "unidad_id": unidad_id,
-                                    "sucursal_id": sucursal_id, "login_ad": login_ad})
+                nuevo_id = AgentesService.crear(
+                    nombre, int(sucursal_id), int(unidad_id), login_ad or "pendiente"
+                )
+                audit(
+                    request, "AGENTE_CREATE", "AGENTES",
+                    f"Creó el agente '{nombre}' (login: {login_ad or 'pendiente'})",
+                    objeto_id=nuevo_id, objeto_nombre=nombre,
+                    datos_nuevos={
+                        "nombre": nombre, "unidad_id": unidad_id,
+                        "sucursal_id": sucursal_id, "login_ad": login_ad,
+                    }
+                )
                 messages.success(request, f"Agente '{nombre}' creado con ID #{nuevo_id}.")
                 return redirect("dashboard:agentes_home")
             except Exception as e:
@@ -116,18 +120,27 @@ def agente_editar(request, agente_id):
             if login_ad and login_ad != "pendiente":
                 existente = AgentesService.buscar_por_login_ad(login_ad)
                 if existente and existente["agente_id"] != agente_id:
-                    messages.error(request, f"El login '{login_ad}' ya está asignado al agente #{existente['agente_id']}.")
+                    messages.error(
+                        request,
+                        f"El login '{login_ad}' ya está asignado al agente #{existente['agente_id']}."
+                    )
                     return render(request, "dashboard/usuarios/agente_form.html", {
                         "agente": agente, "sucursales": sucursales,
                         "unidades": unidades, "modo": "editar",
                     })
             try:
-                AgentesService.actualizar(agente_id, nombre, int(sucursal_id), int(unidad_id), login_ad)
-                audit(request, AuditLog.Accion.AGENTE_UPDATE, AuditLog.Modulo.AGENTES,
-                      f"Editó el agente '{agente['nombre']}'",
-                      objeto_id=agente_id, objeto_nombre=nombre,
-                      datos_anteriores={"nombre": agente["nombre"], "login_ad": agente["login_ad"]},
-                      datos_nuevos={"nombre": nombre, "login_ad": login_ad})
+                AgentesService.actualizar(
+                    agente_id, nombre, int(sucursal_id), int(unidad_id), login_ad
+                )
+                audit(
+                    request, "AGENTE_UPDATE", "AGENTES",
+                    f"Editó el agente '{agente['nombre']}'",
+                    objeto_id=agente_id, objeto_nombre=nombre,
+                    datos_anteriores={
+                        "nombre": agente["nombre"], "login_ad": agente["login_ad"]
+                    },
+                    datos_nuevos={"nombre": nombre, "login_ad": login_ad}
+                )
                 messages.success(request, f"Agente #{agente_id} actualizado.")
                 return redirect("dashboard:agentes_home")
             except Exception as e:
@@ -145,10 +158,12 @@ def agente_eliminar(request, agente_id):
     try:
         agente = AgentesService.obtener(agente_id)
         AgentesService.eliminar(agente_id)
-        audit(request, AuditLog.Accion.AGENTE_DELETE, AuditLog.Modulo.AGENTES,
-              f"Eliminó el agente '{agente['nombre']}' (soft delete)",
-              objeto_id=agente_id, objeto_nombre=agente["nombre"],
-              severidad=AuditLog.Severidad.WARNING)
+        audit(
+            request, "AGENTE_DELETE", "AGENTES",
+            f"Eliminó el agente '{agente['nombre']}' (soft delete)",
+            objeto_id=agente_id, objeto_nombre=agente["nombre"],
+            severidad="WARNING"
+        )
         messages.success(request, f"Agente #{agente_id} eliminado.")
     except Exception as e:
         messages.error(request, f"Error al eliminar: {e}")
@@ -179,16 +194,18 @@ def agente_qr_download(request, agente_id, encuesta_id):
     unidad_key = (agente["unidad_nombre"] or "").strip().lower()
     encuesta_id = UNIDAD_ENCUESTA.get(unidad_key, 1)
 
-    url    = build_encuesta_url(int(encuesta_id), agente_id)
-    qr_b64 = generar_qr_base64(url, size=12)
-    png    = base64.b64decode(qr_b64)
+    url     = build_encuesta_url(int(encuesta_id), agente_id)
+    qr_b64  = generar_qr_base64(url, size=12)
+    png     = base64.b64decode(qr_b64)
 
     enc_nombre     = ENCUESTA_NOMBRE.get(int(encuesta_id), f"encuesta_{encuesta_id}")
     nombre_archivo = f"QR_{agente['nombre'].replace(' ', '_')}_{enc_nombre.replace(' ', '_')}.png"
 
-    audit(request, AuditLog.Accion.EXPORT_QR, AuditLog.Modulo.QR,
-          f"Descargó QR del agente '{agente['nombre']}' — {enc_nombre}",
-          objeto_id=agente_id, objeto_nombre=agente["nombre"])
+    audit(
+        request, "EXPORT_QR", "AGENTES",
+        f"Descargó QR del agente '{agente['nombre']}' — {enc_nombre}",
+        objeto_id=agente_id, objeto_nombre=agente["nombre"]
+    )
 
     response = HttpResponse(png, content_type="image/png")
     response["Content-Disposition"] = f'attachment; filename="{nombre_archivo}"'
@@ -214,9 +231,11 @@ def agente_qr_download_zip(request, agente_id):
     buffer.seek(0)
     nombre_zip = f"QR_{agente['nombre'].replace(' ', '_')}.zip"
 
-    audit(request, AuditLog.Accion.EXPORT_ZIP, AuditLog.Modulo.QR,
-          f"Descargó ZIP de QR del agente '{agente['nombre']}'",
-          objeto_id=agente_id, objeto_nombre=agente["nombre"])
+    audit(
+        request, "EXPORT_ZIP", "AGENTES",
+        f"Descargó ZIP de QR del agente '{agente['nombre']}'",
+        objeto_id=agente_id, objeto_nombre=agente["nombre"]
+    )
 
     response = HttpResponse(buffer, content_type="application/zip")
     response["Content-Disposition"] = f'attachment; filename="{nombre_zip}"'
@@ -255,9 +274,12 @@ def agentes_inactivos(request):
 def agente_restaurar(request, agente_id):
     try:
         AgentesService.restaurar(agente_id)
-        audit(request, AuditLog.Accion.AGENTE_RESTORE, AuditLog.Modulo.AGENTES,
-              f"Restauró el agente #{agente_id}",
-              objeto_id=agente_id, severidad=AuditLog.Severidad.WARNING)
+        audit(
+            request, "AGENTE_RESTORE", "AGENTES",
+            f"Restauró el agente #{agente_id}",
+            objeto_id=agente_id,
+            severidad="WARNING"
+        )
         messages.success(request, f"Agente #{agente_id} restaurado correctamente.")
     except Exception as e:
         messages.error(request, f"Error al restaurar: {e}")

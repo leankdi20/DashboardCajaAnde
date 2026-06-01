@@ -64,105 +64,232 @@ VALOR_WEB_SQL = """
 """
 
 
+# ── Mapa de correos SAT por Unidad (San José) ────────────────────
+# Clave: valor exacto del campo Unidad en la BD
+# Valor: lista de correos de la jefatura de esa unidad
+
+CORREOS_SAT_UNIDAD = {
+    "Ahorros": [
+        "rmora@cajadeande.fi.cr",
+        "dcerdas@cajadeande.fi.cr",
+        "pbarrantes@cajadeande.fi.cr",
+    ],
+    "Tarjetas": [
+        "bmarin@cajadeande.fi.cr",
+        "kchacon@cajadeande.fi.cr",
+        "shretana@cajadeande.fi.cr",
+    ],
+    "Préstamos Personales": [
+        "llazcarez@cajadeande.fi.cr",
+        "ipadilla@cajadeande.fi.cr",
+        "juazofeifa@cajadeande.fi.cr",
+    ],
+    "Vivienda": [
+        "jazofeifa@cajadeande.fi.cr",
+        "mguzman@cajadeande.fi.cr",
+        "ecampos@cajadeande.fi.cr",
+    ],
+    "Control de Crédito": [
+        "ffallas@cajadeande.fi.cr",
+        "maguzman@cajadeande.fi.cr",
+    ],
+    "Cajas": [
+        "mapu@cajadeande.fi.cr",
+        "sbeins@cajadeande.fi.cr",
+    ],
+}
+
+# ── Mapa de correos SAT por Sucursal (fuera de San José) ─────────
+# Clave: valor exacto del campo Sucursal en la BD
+# Valor: lista de correos de la jefatura de esa sucursal
+
+CORREOS_SAT_SUCURSAL = {
+    "Alajuela": [
+        "mimendez@cajadeande.fi.cr",
+        "marias@cajadeande.fi.cr",
+        "vjuarez@cajadeande.fi.cr",
+    ],
+    "Cartago": [
+        "rcalderon@cajadeande.fi.cr",
+        "ksoto@cajadeande.fi.cr",
+        "gcoto@cajadeande.fi.cr",
+    ],
+    "Ciudad Neily": [
+        "jemendez@cajadeande.fi.cr",
+        "ljimenez@cajadeande.fi.cr",
+        "lelizondo@cajadeande.fi.cr",
+    ],
+    "Guápiles": [
+        "farguedas@cajadeande.fi.cr",
+        "bquiros@cajadeande.fi.cr",
+    ],
+    "Heredia": [
+        "AFallas@cajadeande.fi.cr",
+        "vugalde@cajadeande.fi.cr",
+        "thernandez@cajadeande.fi.cr",
+    ],
+    "Liberia": [
+        "echaves@cajadeande.fi.cr",
+        "nchacon@cajadeande.fi.cr",
+        "jmayorga@cajadeande.fi.cr",
+    ],
+    "Limón": [
+        "icajina@cajadeande.fi.cr",
+        "dbaker@cajadeande.fi.cr",
+    ],
+    "Pérez Zeledón": [
+        "lfernandez@cajadeande.fi.cr",
+        "vreyes@cajadeande.fi.cr",
+        "lzuniga@cajadeande.fi.cr",
+        "sirojas@cajadeande.fi.cr",
+    ],
+    "Puntarenas": [
+        "kaguirre@cajadeande.fi.cr",
+        "ghidalgo@cajadeande.fi.cr",
+        "dbolanos@cajadeande.fi.cr",
+    ],
+    "San Carlos": [
+        "arojas@cajadeande.fi.cr",
+        "jsalas@cajadeande.fi.cr",
+    ],
+    "San Ramón": [
+        "agomez@cajadeande.fi.cr",
+        "jelizondo@cajadeande.fi.cr",
+        "yleandro@cajadeande.fi.cr",
+    ],
+    "Santa Cruz": [
+        "mlara@cajadeande.fi.cr",
+        "scontreras@cajadeande.fi.cr",
+    ],
+}
+
+# Correo de fallback para SAT si no se encuentra la unidad/sucursal
+CORREO_SAT_FALLBACK = getattr(
+    settings, "DETRACTOR_EMAIL_SAT_FALLBACK", ["levarela@cajadeande.fi.cr"]
+)
+
+# Correo de Servicio al accionista (WhatsApp, chatBot)
+CORREO_SERVICIO_ACCIONISTA = ["AtencionUSA@cajadeande.fi.cr"]
+
+
+def resolver_destinos_sat(unidad: str, sucursal: str) -> list[str]:
+    """
+    Determina los correos de destino para un detractor SAT:
+    - Si la sucursal es San José → enrutar por Unidad
+    - Si es otra sucursal       → enrutar por Sucursal
+    - Si no se encuentra        → usar fallback
+    """
+    unidad   = (unidad   or "").strip()
+    sucursal = (sucursal or "").strip()
+
+    if sucursal == "San José":
+        destinos = CORREOS_SAT_UNIDAD.get(unidad)
+        if destinos:
+            return destinos
+        # Unidad no mapeada en San José — fallback
+        return CORREO_SAT_FALLBACK
+
+    # Sucursal fuera de San José
+    destinos = CORREOS_SAT_SUCURSAL.get(sucursal)
+    if destinos:
+        return destinos
+
+    # Sucursal no mapeada — fallback
+    return CORREO_SAT_FALLBACK
+
+
 # ── Definición de grupos ─────────────────────────────────────────
-# Columnas disponibles por vista (verificadas con SELECT TOP 1 *):
-#
-# Satisfaccion:    respuesta_id, Fecha, Hora, Cedula, Nombre, Correo,
-#                  Agente, Sucursal, Unidad, Gestion, orden, encuesta_det_id
-# OficinaDigital:  respuesta_id, Fecha, Cedula, Nombre, Agente,
-#                  orden, encuesta_det_id
-# PaginaWeb:       respuesta_id, Fecha, Nombre  (sin Hora, sin Cedula,
-#                  sin Agente, sin encuesta_det_id)
-# WhatsAppAgente:  respuesta_id, Fecha, Hora, Cedula, Nombre, Agente,
-#                  encuesta_det_id
-# WhatsAppSinAg:   respuesta_id, Fecha, Hora, Cedula, Nombre,
-#                  encuesta_det_id
 
 GRUPOS = [
     {
-        "nombre":        "Satisfaccion",
-        "vista":         "dbo.vw_reporte_encuestas_satisfaccion",
-        "valor_sql":     VALOR_SAT_SQL,
-        "escala":        5,
-        "umbral":        2,
-        "operador":      "<=",
-        "where_extra":   "",
-        "tiene_agente":  True,
-        "tiene_cedula":  True,
-        "tiene_gestion": True,
-        "tiene_sucursal":True,
-        "tiene_unidad":  True,
-        "tiene_hora":    True,
-        "tiene_detid":   True,
-        "settings_key":  "DETRACTOR_EMAIL_SAT",
+        "nombre":         "Satisfaccion",
+        "vista":          "dbo.vw_reporte_encuestas_satisfaccion",
+        "valor_sql":      VALOR_SAT_SQL,
+        "escala":         5,
+        "umbral":         2,
+        "operador":       "<=",
+        "where_extra":    "",
+        "tiene_agente":   True,
+        "tiene_cedula":   True,
+        "tiene_gestion":  True,
+        "tiene_sucursal": True,
+        "tiene_unidad":   True,
+        "tiene_hora":     True,
+        "tiene_detid":    True,
+        "settings_key":   None,        # SAT usa enrutamiento dinámico
+        "enrutamiento":   "sat",
     },
     {
-        "nombre":        "OficinaDigital",
-        "vista":         "dbo.vw_reporte_encuestas_satisfaccion_oficina_digital",
-        "valor_sql":     VALOR_OD_SQL,
-        "escala":        3,
-        "umbral":        2,
-        "operador":      "<",
-        "where_extra":   "AND Respuesta IN ('Excelente','Regular','Malo')",
-        "tiene_agente":  True,
-        "tiene_cedula":  True,
-        "tiene_gestion": False,
-        "tiene_sucursal":False,
-        "tiene_unidad":  False,
-        "tiene_hora":    False,
-        "tiene_detid":   True,
-        "settings_key":  "DETRACTOR_EMAIL_OD",
+        "nombre":         "OficinaDigital",
+        "vista":          "dbo.vw_reporte_encuestas_satisfaccion_oficina_digital",
+        "valor_sql":      VALOR_OD_SQL,
+        "escala":         3,
+        "umbral":         2,
+        "operador":       "<",
+        "where_extra":    "AND Respuesta IN ('Excelente','Regular','Malo')",
+        "tiene_agente":   True,
+        "tiene_cedula":   True,
+        "tiene_gestion":  False,
+        "tiene_sucursal": False,
+        "tiene_unidad":   False,
+        "tiene_hora":     False,
+        "tiene_detid":    True,
+        "settings_key":   "DETRACTOR_EMAIL_OD",
+        "enrutamiento":   "fijo",
     },
     {
-        "nombre":        "PaginaWeb",
-        "vista":         "dbo.vw_reporte_encuestas_satisfaccion_pagina_web",
-        "valor_sql":     VALOR_WEB_SQL,
-        "escala":        10,
-        "umbral":        3,
-        "operador":      "<=",
-        "where_extra":   "AND Pregunta IN ('¿Considera que el sitio web es amigable y fácil de navegar?','¿Encontró fácilmente la información que buscaba?')",
-        "tiene_agente":  False,
-        "tiene_cedula":  False,
-        "tiene_gestion": False,
-        "tiene_sucursal":False,
-        "tiene_unidad":  False,
-        "tiene_hora":    False,
-        "tiene_detid":   False,  # ← PaginaWeb no tiene encuesta_det_id
-        "settings_key":  "DETRACTOR_EMAIL_WEB",
+        "nombre":         "PaginaWeb",
+        "vista":          "dbo.vw_reporte_encuestas_satisfaccion_pagina_web",
+        "valor_sql":      VALOR_WEB_SQL,
+        "escala":         10,
+        "umbral":         3,
+        "operador":       "<=",
+        "where_extra":    "AND Pregunta IN ('¿Considera que el sitio web es amigable y fácil de navegar?','¿Encontró fácilmente la información que buscaba?')",
+        "tiene_agente":   False,
+        "tiene_cedula":   False,
+        "tiene_gestion":  False,
+        "tiene_sucursal": False,
+        "tiene_unidad":   False,
+        "tiene_hora":     False,
+        "tiene_detid":    False,
+        "settings_key":   "DETRACTOR_EMAIL_WEB",
+        "enrutamiento":   "fijo",
     },
     {
-        "nombre":        "WhatsAppAgente",
-        "vista":         "dbo.vw_reporte_encuestas_satisfaccion_whatsapp_agente",
-        "valor_sql":     VALOR_WA_SQL,
-        "escala":        5,
-        "umbral":        2,
-        "operador":      "<=",
-        "where_extra":   "AND Pregunta IN ('¿Cuál es su nivel de satisfacción con el servicio brindado por el/la agente?','¿La persona que le atendió le brindó respuesta a todas sus consultas?','¿Los tiempos de respuesta fueron adecuados?')",
-        "tiene_agente":  True,
-        "tiene_cedula":  True,
-        "tiene_gestion": False,
-        "tiene_sucursal":False,
-        "tiene_unidad":  False,
-        "tiene_hora":    True,
-        "tiene_detid":   True,
-        "settings_key":  "DETRACTOR_EMAIL_WA_AGENTE",
+        "nombre":         "WhatsAppAgente",
+        "vista":          "dbo.vw_reporte_encuestas_satisfaccion_whatsapp_agente",
+        "valor_sql":      VALOR_WA_SQL,
+        "escala":         5,
+        "umbral":         2,
+        "operador":       "<=",
+        "where_extra":    "AND Pregunta IN ('¿Cuál es su nivel de satisfacción con el servicio brindado por el/la agente?','¿La persona que le atendió le brindó respuesta a todas sus consultas?','¿Los tiempos de respuesta fueron adecuados?')",
+        "tiene_agente":   True,
+        "tiene_cedula":   True,
+        "tiene_gestion":  False,
+        "tiene_sucursal": False,
+        "tiene_unidad":   False,
+        "tiene_hora":     True,
+        "tiene_detid":    True,
+        "settings_key":   "DETRACTOR_EMAIL_WA_AGENTE",
+        "enrutamiento":   "fijo",
     },
     {
-        "nombre":        "WhatsAppSinAgente",
-        "vista":         "dbo.vw_reporte_encuestas_satisfaccion_WhatsApp_sin_agente",
-        "valor_sql":     VALOR_WA_SQL,
-        "escala":        5,
-        "umbral":        2,
-        "operador":      "<=",
-        "where_extra":   "AND Pregunta IN ('¿Cuál es su nivel de satisfacción con el servicio brindado por el/la agente?','¿La persona que le atendió le brindó respuesta a todas sus consultas?','¿Los tiempos de respuesta fueron adecuados?')",
-        "tiene_agente":  False,
-        "tiene_cedula":  True,
-        "tiene_gestion": False,
-        "tiene_sucursal":False,
-        "tiene_unidad":  False,
-        "tiene_hora":    True,
-        "tiene_detid":   True,
-        "settings_key":  "DETRACTOR_EMAIL_WA_SIN_AGENTE",
+        "nombre":         "WhatsAppSinAgente",
+        "vista":          "dbo.vw_reporte_encuestas_satisfaccion_WhatsApp_sin_agente",
+        "valor_sql":      VALOR_WA_SQL,
+        "escala":         5,
+        "umbral":         2,
+        "operador":       "<=",
+        "where_extra":    "AND Pregunta IN ('¿Cuál es su nivel de satisfacción con el servicio brindado por el/la agente?','¿La persona que le atendió le brindó respuesta a todas sus consultas?','¿Los tiempos de respuesta fueron adecuados?')",
+        "tiene_agente":   False,
+        "tiene_cedula":   True,
+        "tiene_gestion":  False,
+        "tiene_sucursal": False,
+        "tiene_unidad":   False,
+        "tiene_hora":     True,
+        "tiene_detid":    True,
+        "settings_key":   "DETRACTOR_EMAIL_WA_SIN_AGENTE",
+        "enrutamiento":   "fijo",
     },
 ]
 
@@ -170,17 +297,12 @@ GRUPOS = [
 # ── Queries ──────────────────────────────────────────────────────
 
 def build_query_detractores(grupo: dict, limite: int = None) -> str:
-    """
-    Construye el query de detractores para una vista específica.
-    Usa solo las columnas que existen en cada vista.
-    """
     vista       = grupo["vista"]
     valor_sql   = grupo["valor_sql"]
     umbral      = grupo["umbral"]
     operador    = grupo["operador"]
     where_extra = grupo.get("where_extra", "")
 
-    # Columnas SELECT opcionales
     sel_agente   = "Agente,"   if grupo["tiene_agente"]   else ""
     sel_cedula   = "Cedula,"   if grupo["tiene_cedula"]   else ""
     sel_gestion  = "Gestion,"  if grupo["tiene_gestion"]  else ""
@@ -188,7 +310,6 @@ def build_query_detractores(grupo: dict, limite: int = None) -> str:
     sel_unidad   = "Unidad,"   if grupo["tiene_unidad"]   else ""
     sel_hora     = "Hora,"     if grupo["tiene_hora"]     else ""
 
-    # GROUP BY — mismas columnas que SELECT (sin alias v)
     gb_agente   = "Agente,"   if grupo["tiene_agente"]   else ""
     gb_cedula   = "Cedula,"   if grupo["tiene_cedula"]   else ""
     gb_gestion  = "Gestion,"  if grupo["tiene_gestion"]  else ""
@@ -247,7 +368,6 @@ def build_query_detractores(grupo: dict, limite: int = None) -> str:
 
 
 def build_query_detalle(grupo: dict) -> str:
-    """Trae preguntas/respuestas completas de una encuesta."""
     orden = "encuesta_det_id" if grupo["tiene_detid"] else "Pregunta"
     return f"""
         SELECT Pregunta, Respuesta
@@ -314,15 +434,21 @@ class Command(BaseCommand):
     # ── Procesar un grupo ────────────────────────────────────────
     def _procesar_grupo(self, grupo: dict, solo_marcar: bool,
                         limite: int = None) -> tuple:
-        nombre = grupo["nombre"]
+        nombre       = grupo["nombre"]
+        enrutamiento = grupo.get("enrutamiento", "fijo")
+
         self.stdout.write(f"\n  [{nombre}] Procesando...")
 
-        destinos = getattr(settings, grupo["settings_key"], [])
-        if not destinos:
-            self.stdout.write(
-                self.style.WARNING(f"  [{nombre}] Sin correos configurados — omitido.")
-            )
-            return 0, 0
+        # Para grupos con destino fijo verificar que existan correos configurados
+        if enrutamiento == "fijo":
+            destinos_fijos = getattr(settings, grupo["settings_key"], [])
+            if not destinos_fijos:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"  [{nombre}] Sin correos configurados — omitido."
+                    )
+                )
+                return 0, 0
 
         # IDs ya notificados en este grupo
         ya_notificados = set(
@@ -332,7 +458,7 @@ class Command(BaseCommand):
 
         # Obtener detractores
         try:
-            sql  = build_query_detractores(grupo)
+            sql   = build_query_detractores(grupo)
             datos = ReportesDBService.ejecutar_query(sql)
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"  [{nombre}] Error en query: {e}"))
@@ -347,7 +473,6 @@ class Command(BaseCommand):
 
         nuevos = list(detractores.values())
 
-        # Aplicar límite si se pasó --limite
         if limite and len(nuevos) > limite:
             self.stdout.write(
                 f"  [{nombre}] {len(nuevos)} disponibles — procesando solo {limite}."
@@ -365,6 +490,14 @@ class Command(BaseCommand):
         for det in nuevos:
             rid = det["respuesta_id"]
 
+            # Resolver destinos según tipo de enrutamiento
+            if enrutamiento == "sat":
+                unidad   = det.get("Unidad",   "") or ""
+                sucursal = det.get("Sucursal", "") or ""
+                destinos = resolver_destinos_sat(unidad, sucursal)
+            else:
+                destinos = getattr(settings, grupo["settings_key"], [])
+
             # Fecha timezone-aware
             fecha_raw = det.get("Fecha")
             if fecha_raw and isinstance(fecha_raw, datetime.datetime):
@@ -374,7 +507,7 @@ class Command(BaseCommand):
             # Detalle de la encuesta
             try:
                 detalle_sql = build_query_detalle(grupo)
-                detalle = ReportesDBService.ejecutar_query(detalle_sql, [rid])
+                detalle     = ReportesDBService.ejecutar_query(detalle_sql, [rid])
             except Exception:
                 detalle = []
 
@@ -383,22 +516,20 @@ class Command(BaseCommand):
                     respuesta_id=rid,
                     grupo=nombre,
                     defaults={
-                        "encuesta_id": det.get("encuesta_id"),
-                        "agente": det.get("Agente", "") or "",
-                        "sucursal": det.get("Sucursal", "") or "",
-                        "promedio": det.get("promedio_encuesta"),
+                        "encuesta_id":    det.get("encuesta_id"),
+                        "agente":         det.get("Agente", "") or "",
+                        "sucursal":       det.get("Sucursal", "") or "",
+                        "promedio":       det.get("promedio_encuesta"),
                         "fecha_encuesta": fecha_raw,
                         "correo_enviado": False,
-                        "error_envio": "solo-marcar",
+                        "error_envio":    "solo-marcar",
                     }
                 )
-
                 if created:
                     enviados += 1
                     self.stdout.write(f"  [{nombre}] OK marcado respuesta_id={rid}")
                 else:
-                    self.stdout.write(f"  [{nombre}] Ya existia respuesta_id={rid}")
-
+                    self.stdout.write(f"  [{nombre}] Ya existía respuesta_id={rid}")
                 continue
 
             try:
@@ -408,39 +539,39 @@ class Command(BaseCommand):
                     respuesta_id=rid,
                     grupo=nombre,
                     defaults={
-                        "encuesta_id": det.get("encuesta_id"),
-                        "agente": det.get("Agente", "") or "",
-                        "sucursal": det.get("Sucursal", "") or "",
-                        "promedio": det.get("promedio_encuesta"),
+                        "encuesta_id":    det.get("encuesta_id"),
+                        "agente":         det.get("Agente", "") or "",
+                        "sucursal":       det.get("Sucursal", "") or "",
+                        "promedio":       det.get("promedio_encuesta"),
                         "fecha_encuesta": fecha_raw,
                         "correo_enviado": True,
                     }
                 )
-
                 if created:
                     enviados += 1
                     self.stdout.write(f"  [{nombre}] OK respuesta_id={rid}")
                 else:
-                    self.stdout.write(f"  [{nombre}] Ya existia respuesta_id={rid}")
+                    self.stdout.write(f"  [{nombre}] Ya existía respuesta_id={rid}")
 
             except Exception as e:
-                obj, created = DetractorNotificado.objects.get_or_create(
+                DetractorNotificado.objects.get_or_create(
                     respuesta_id=rid,
                     grupo=nombre,
                     defaults={
-                        "encuesta_id": det.get("encuesta_id"),
-                        "agente": det.get("Agente", "") or "",
-                        "sucursal": det.get("Sucursal", "") or "",
-                        "promedio": det.get("promedio_encuesta"),
+                        "encuesta_id":    det.get("encuesta_id"),
+                        "agente":         det.get("Agente", "") or "",
+                        "sucursal":       det.get("Sucursal", "") or "",
+                        "promedio":       det.get("promedio_encuesta"),
                         "fecha_encuesta": fecha_raw,
                         "correo_enviado": False,
-                        "error_envio": str(e)[:500],
+                        "error_envio":    str(e)[:500],
                     }
                 )
-
                 errores += 1
                 self.stdout.write(
-                    self.style.ERROR(f"  [{nombre}] ERROR respuesta_id={rid}: {e}")
+                    self.style.ERROR(
+                        f"  [{nombre}] ERROR respuesta_id={rid}: {e}"
+                    )
                 )
 
         return enviados, errores
@@ -453,12 +584,12 @@ class Command(BaseCommand):
         promedio     = det.get("promedio_encuesta", 0) or 0
         fecha        = det.get("Fecha", "")
 
-        agente   = det.get("Agente", "—")   if grupo["tiene_agente"]   else "—"
+        agente   = det.get("Agente",   "—") if grupo["tiene_agente"]   else "—"
         sucursal = det.get("Sucursal", "—") if grupo["tiene_sucursal"] else "—"
-        unidad   = det.get("Unidad", "—")   if grupo["tiene_unidad"]   else "—"
-        gestion  = det.get("Gestion", "—")  if grupo["tiene_gestion"]  else "—"
+        unidad   = det.get("Unidad",   "—") if grupo["tiene_unidad"]   else "—"
+        gestion  = det.get("Gestion",  "—") if grupo["tiene_gestion"]  else "—"
         nombre_accionista = det.get("Nombre", "No registrado") or "No registrado"
-        cedula   = det.get("Cedula", "—")   if grupo["tiene_cedula"]   else "—"
+        cedula   = det.get("Cedula",   "—") if grupo["tiene_cedula"]   else "—"
 
         asunto = f"⚠️ Detractor [{nombre_grupo}] — {fecha}"
         if agente != "—":
@@ -572,7 +703,7 @@ class Command(BaseCommand):
 
         texto_plano = (
             f"ALERTA DETRACTOR [{nombre_grupo}] — HorizonZero\n"
-            f"Agente: {agente} | Sucursal: {sucursal}\n"
+            f"Agente: {agente} | Sucursal: {sucursal} | Unidad: {unidad}\n"
             f"Promedio: {promedio_display}\n"
             f"Accionista: {nombre_accionista} | Cédula: {cedula}\n"
             f"Fecha: {fecha}\n"

@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 from django.views.static import serve
 from django.http import HttpResponse
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # path('admin/', admin.site.urls),
     path("__test_urls__/", lambda request: HttpResponse("OK URLS")),
     path("usuarios/", include("apps.usuarios.urls", namespace="usuarios")),
     path("dashboard/", include("apps.dashboard.urls", namespace="dashboard")),

@@ -37,7 +37,7 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 # Application definition
 
 DJANGO_APPS = [
-    "django.contrib.admin",
+    # "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -51,6 +51,7 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
+    
     "apps.core.apps.CoreConfig",
     "apps.usuarios.apps.UsuariosConfig",
     "apps.dashboard.apps.DashboardConfig",
@@ -63,11 +64,12 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.usuarios.middleware_jwt.JWTAuthMiddleware', #nuevo
+    # 'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     "apps.usuarios.middleware.LoginRequiredMiddleware",
-    'apps.core.middleware.LimpiarCachePermisosMiddleware',
+  
 ]
 
 ROOT_URLCONF = 'HorizonZero.urls'
@@ -94,37 +96,29 @@ ASGI_APPLICATION = "HorizonZero.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "mssql",
+#         "NAME":     os.getenv("DB_NAME"),       # encuestas_db
+#         "USER":     os.getenv("DB_USER"),       # encuestas_desa
+#         "PASSWORD": os.getenv("DB_PASSWORD"),
+#         "HOST":     os.getenv("DB_HOST"),       # SQLWD-VSRV3
+#         "PORT":     os.getenv("DB_PORT", "1433"),
+#         "OPTIONS": {
+#             "driver": os.getenv("DB_DRIVER", "ODBC Driver 17 for SQL Server"),
+#             "trust_server_certificate": os.getenv("DB_TRUST_SERVER_CERTIFICATE", "yes"),
+#         },
+#     },
+# }
 DATABASES = {
     "default": {
-        "ENGINE": "mssql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT", "1433"),
-        "OPTIONS": {
-            "driver": os.getenv("DB_DRIVER", "ODBC Driver 17 for SQL Server"),
-            "trust_server_certificate": os.getenv("DB_TRUST_SERVER_CERTIFICATE", "yes"),
-        },
-    },
-    # Data base de reportes: Esto debe cambiarse y modificar por la de producción con usuario y contraseña. Tambien el server correcto
-    "reportes_db": {
-        "ENGINE": "mssql",
-        "NAME": os.getenv("REPORTS_DB_NAME"),
-        "HOST": os.getenv("REPORTS_DB_HOST"),
-        "PORT": os.getenv("REPORTS_DB_PORT", "1433"),
-        "OPTIONS": {
-            # "driver": "ODBC Driver 17 for SQL Server",
-            "trusted_connection": "yes",        # ← Windows Authentication
-            # "trust_server_certificate": "yes",  # ← igual que tu imagen
-            "driver": os.getenv("DB_DRIVER", "ODBC Driver 17 for SQL Server"),
-            "trust_server_certificate": os.getenv("DB_TRUST_SERVER_CERTIFICATE", "yes"),
-        },
-    },
-
+        "ENGINE": "django.db.backends.dummy",
+    }
 }
 
+# SILENCED_SYSTEM_CHECKS = ["django_db_warnings"]
 
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -225,7 +219,7 @@ SESSION_COOKIE_AGE = 360 * 60       # 6 horas (igual que C# SessionTimeout=360)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = True   # Renueva timeout con cada request
 # Sesiones en base de datos (requerido para detección de duplicados real)
-SESSION_ENGINE = "django.contrib.sessions.backends.db"
+# SESSION_ENGINE = "django.contrib.sessions.backends.db"
 # CSRF
 CSRF_COOKIE_HTTPONLY = False        # Django lo necesita en JS
 
@@ -240,4 +234,22 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
-DATABASE_ROUTERS = ['apps.dashboard.routers.EncuestasDBRouter']
+# DATABASE_ROUTERS = ['apps.dashboard.routers.EncuestasDBRouter']
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "horizonzero-login-attempts",
+    }
+}
+
+# Intentos máximos en Login para dar avisos.
+LOGIN_MAX_ATTEMPTS = int(os.getenv("LOGIN_MAX_ATTEMPTS", "5"))
+LOGIN_BLOCK_MINUTES = int(os.getenv("LOGIN_BLOCK_MINUTES", "1"))
+
+API_INTERNAL_KEY = os.getenv("API_INTERNAL_KEY", "")
+# ── API interna ───────────────────────────────────────────────────
+USE_API      = os.getenv("USE_API", "False") == "True"
+API_URL      = os.getenv("API_URL", "")
+API_USER     = os.getenv("API_USER", "")
+API_PASSWORD = os.getenv("API_PASSWORD", "")

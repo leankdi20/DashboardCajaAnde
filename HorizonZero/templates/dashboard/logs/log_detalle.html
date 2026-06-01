@@ -32,9 +32,9 @@
     </div>
 
     <div class="flex-1 min-w-0">
-      <p class="font-bold text-slate-800">{{ log.get_accion_display }}</p>
+      <p class="font-bold text-slate-800">{{ log.accion_display }}</p>
       <p class="text-xs text-slate-400 mt-0.5">
-        {{ log.fecha|date:"d/m/Y \a \l\a\s H:i:s" }} · {{ log.username }}
+        {{ log.fecha }} · {{ log.username }}
       </p>
     </div>
 
@@ -46,7 +46,7 @@
         {% if log.severidad == 'CRITICAL' %}bg-red-500
         {% elif log.severidad == 'WARNING' %}bg-amber-500
         {% else %}bg-blue-500{% endif %}"></span>
-      {{ log.get_severidad_display }}
+      {{ log.severidad_display }}
     </span>
 
     <a href="{% url 'dashboard:logs_home' %}"
@@ -63,78 +63,75 @@
     </div>
     <div class="divide-y divide-slate-50">
 
-      {% with rows=data_rows %}
-      {% for label, valor in rows %}
-      <div class="px-5 py-3 flex gap-4">
-        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">{{ label }}</span>
-        <span class="text-sm text-slate-700">{{ valor|default:"—" }}</span>
-      </div>
-      {% endfor %}
-      {% endwith %}
-
       <div class="px-5 py-3 flex gap-4">
         <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">ID Registro</span>
         <span class="text-sm text-slate-700 font-mono">#{{ log.id }}</span>
       </div>
+
       <div class="px-5 py-3 flex gap-4">
         <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Fecha / Hora</span>
-        <span class="text-sm text-slate-700 font-mono">{{ log.fecha|date:"d/m/Y H:i:s" }}</span>
+        <span class="text-sm text-slate-700 font-mono">{{ log.fecha }}</span>
       </div>
+
       <div class="px-5 py-3 flex gap-4">
         <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Usuario</span>
         <span class="text-sm text-slate-700 font-medium">{{ log.username }}</span>
       </div>
+
       <div class="px-5 py-3 flex gap-4">
         <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Acción</span>
-        <span class="text-sm text-slate-700">{{ log.get_accion_display }}</span>
+        <span class="text-sm text-slate-700">{{ log.accion_display }}</span>
       </div>
+
       <div class="px-5 py-3 flex gap-4">
         <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Módulo</span>
-        <span class="text-sm text-slate-700">{{ log.get_modulo_display }}</span>
+        <span class="text-sm text-slate-700">{{ log.modulo_display }}</span>
       </div>
+
       <div class="px-5 py-3 flex gap-4">
         <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Severidad</span>
-        <span class="text-sm text-slate-700">{{ log.get_severidad_display }}</span>
+        <span class="text-sm text-slate-700">{{ log.severidad_display }}</span>
       </div>
+
       <div class="px-5 py-3 flex gap-4">
         <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Descripción</span>
         <span class="text-sm text-slate-700">{{ log.descripcion }}</span>
       </div>
+
       {% if log.objeto_id %}
       <div class="px-5 py-3 flex gap-4">
         <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Objeto ID</span>
         <span class="text-sm text-slate-700 font-mono">{{ log.objeto_id }}</span>
       </div>
       {% endif %}
+
       {% if log.objeto_nombre %}
       <div class="px-5 py-3 flex gap-4">
         <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Objeto</span>
         <span class="text-sm text-slate-700">{{ log.objeto_nombre }}</span>
       </div>
       {% endif %}
+
       <div class="px-5 py-3 flex gap-4">
         <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">IP Address</span>
         <span class="text-sm text-slate-700 font-mono">{{ log.ip_address|default:"—" }}</span>
       </div>
+
       <div class="px-5 py-3 flex gap-4">
         <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">URL</span>
         <span class="text-sm text-slate-500 font-mono break-all">{{ log.url|default:"—" }}</span>
       </div>
+
       <div class="px-5 py-3 flex gap-4">
         <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Método HTTP</span>
         <span class="text-sm text-slate-700 font-mono">{{ log.metodo_http|default:"—" }}</span>
       </div>
+
       <div class="px-5 py-3 flex gap-4">
         <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Navegador</span>
         <span class="text-sm text-slate-400 text-xs break-all">{{ log.user_agent|default:"—" }}</span>
       </div>
-      <div class="px-5 py-3 flex gap-4">
-        <span class="w-40 text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0 pt-0.5">Vence el</span>
-        <span class="text-sm {% if log.esta_vencido %}text-red-500{% else %}text-slate-500{% endif %}">
-          {{ log.fecha_vencimiento|date:"d/m/Y" }}
-          {% if log.esta_vencido %}<span class="text-xs">(vencido)</span>{% endif %}
-        </span>
-      </div>
+
     </div>
   </div>
 

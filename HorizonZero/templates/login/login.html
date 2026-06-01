@@ -18,17 +18,14 @@
         <img class="bg-image img_edificio" src="{% static 'img/login/Edificio.jpg' %}" alt="">
         <div class="absolute inset-0 bg-gradient-to-tr from-blue-900/40 to-transparent"></div>
         <div class="absolute inset-0 glass-overlay opacity-30"></div>
-        <div class="absolute bottom-12 left-12 max-w-lg z-10 text-white">
-            <h1 class="text-5xl font-bold leading-tight mb-4 drop-shadow-lg">Panel de control</h1>
-            <p class="text-xl opacity-90 drop-shadow-md">Información clara y actualizada para el análisis y la gestión diaria.</p>
-        </div>
+        
         <div class="absolute top-12 left-12 z-10">
             <div class="flex items-center space-x-2 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20">
-                <div class="flex flex-col items-center">
-                    <span class="text-accent text-2xl font-black">▲</span>
-                    <span class="text-primary text-2xl font-black -mt-3">▼</span>
-                </div>
-                <span class="text-white font-bold text-xl tracking-tighter">CAJA DE ANDE</span>
+                <img
+                    src="{% static 'img/dashboard/horizontalLogo.png' %}"
+                    alt="Caja de ANDE"
+                    class="h-10 w-auto"
+                >
             </div>
         </div>
     </div>
@@ -55,6 +52,13 @@
                     {% endfor %}
                 </div>
             {% endif %}
+            {% if block_remaining_seconds %}
+            <div id="login-block-counter"
+                data-remaining="{{ block_remaining_seconds }}"
+                class="mb-4 text-sm font-medium text-red-600 text-center">
+            </div>
+            {% endif %}
+
 
             <form method="POST" action="{% url 'usuarios:login' %}" class="space-y-6">
                 {% csrf_token %}
@@ -104,5 +108,35 @@
 <button class="fixed bottom-6 right-6 p-3 bg-white dark:bg-slate-800 rounded-full shadow-2xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:scale-110 transition-transform z-50" onclick="document.documentElement.classList.toggle('dark')">
     <span class="material-icons">dark_mode</span>
 </button>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const counter = document.getElementById("login-block-counter");
+    if (!counter) return;
+
+    let remaining = parseInt(counter.dataset.remaining || "0", 10);
+
+    function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${minutes}:${secs.toString().padStart(2, "0")}`;
+    }
+
+    function renderCounter() {
+        if (remaining <= 0) {
+            counter.textContent = "Ya puede volver a intentar iniciar sesión.";
+            return;
+        }
+
+        counter.textContent = `Tiempo restante de bloqueo: ${formatTime(remaining)}`;
+        remaining -= 1;
+        setTimeout(renderCounter, 1000);
+    }
+
+    renderCounter();
+});
+</script>
+
 </body>
 </html>
