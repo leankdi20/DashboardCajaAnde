@@ -39,6 +39,18 @@ class Command(BaseCommand):
 
 
         print("\n🔐 Creando grupos de HorizonZero...\n")
+        # ── Administración del sistema ──
+        ADMIN_SISTEMA = [
+            "view_usuarios",
+            "view_logs",
+            "view_agentes",
+            "add_agente",
+            "change_agente",
+            "delete_agente",
+            "view_auditlog",
+            "add_auditlog",
+        ]
+
 
         # ── Permisos base (todos los grupos los necesitan) ──
         BASE = [
@@ -98,7 +110,7 @@ class Command(BaseCommand):
         # ════════════════════════════════════════════════
 
         # 1. Administrador — acceso total
-        crear_grupo("Administrador", BASE + TODAS_ENCUESTAS + TODOS_FORMULARIOS)
+        crear_grupo("Administrador", BASE + TODAS_ENCUESTAS + TODOS_FORMULARIOS + ADMIN_SISTEMA)
 
         # 2. Analista General — ve todo pero no puede administrar
         crear_grupo("Analista General", BASE + TODAS_ENCUESTAS + TODOS_FORMULARIOS)

@@ -1,0 +1,175 @@
+{% extends "dashboard/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Usuarios del Sistema{% endblock %}
+
+{% block breadcrumb %}
+<span>Administración</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span class="text-primary">Usuarios</span>
+{% endblock %}
+
+{% block page_title %}Usuarios del Sistema{% endblock %}
+
+{% block content %}
+<div class="p-6 space-y-6">
+
+  {# ── Mensajes ── #}
+  {% for msg in messages %}
+  <div class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
+    {% if msg.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+    {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+    <span class="material-symbols-outlined text-[18px]">info</span>{{ msg }}
+  </div>
+  {% endfor %}
+
+  {# ── Encabezado + botón crear ── #}
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-lg font-bold text-slate-800">Usuarios con acceso al sistema</h2>
+      <p class="text-xs text-slate-400 mt-0.5">{{ usuarios|length }} usuario{% if usuarios|length != 1 %}s{% endif %} registrado{% if usuarios|length != 1 %}s{% endif %}</p>
+    </div>
+    <a href="{% url 'dashboard:usuario_crear' %}"
+       class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors">
+      <span class="material-symbols-outlined text-[18px]">person_add</span>
+      Nuevo usuario
+    </a>
+  </div>
+
+  {# ── Búsqueda ── #}
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+    <form method="get" class="flex gap-3">
+      <input type="text" name="q" value="{{ buscar }}"
+             placeholder="Buscar por nombre o usuario..."
+             class="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary">
+      <button type="submit"
+              class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium">
+        <span class="material-symbols-outlined text-[16px]">search</span>
+        Buscar
+      </button>
+      {% if buscar %}
+      <a href="{% url 'dashboard:usuarios_home' %}"
+         class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm transition-colors">
+        <span class="material-symbols-outlined text-[16px] text-slate-500">close</span>
+      </a>
+      {% endif %}
+    </form>
+  </div>
+
+  {# ── Tabla ── #}
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    {% if usuarios %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-50 text-xs text-slate-500 uppercase tracking-wider">
+            <th class="px-4 py-3 text-left font-medium">Usuario</th>
+            <th class="px-4 py-3 text-left font-medium">Nombre</th>
+            <th class="px-4 py-3 text-left font-medium">Email</th>
+            <th class="px-4 py-3 text-left font-medium">Grupos</th>
+            <th class="px-4 py-3 text-center font-medium">Estado</th>
+            <th class="px-4 py-3 text-center font-medium">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for u in usuarios %}
+          <tr class="hover:bg-slate-50 transition-colors {% if not u.is_active %}opacity-50{% endif %}">
+
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span class="text-xs font-bold text-primary">
+                    {{ u.username|slice:":1"|upper }}
+                  </span>
+                </div>
+                <div>
+                  <p class="font-medium text-slate-700 text-xs">{{ u.username }}</p>
+                  {% if u.is_staff %}
+                  <span class="text-[10px] text-amber-600 font-medium">Staff</span>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+
+            <td class="px-4 py-3 text-xs text-slate-600">
+              {{ u.first_name }} {{ u.last_name }}
+            </td>
+
+            <td class="px-4 py-3 text-xs text-slate-500">
+              {{ u.email|default:"—" }}
+            </td>
+
+            <td class="px-4 py-3">
+              <div class="flex flex-wrap gap-1">
+                {% for grupo in u.grupos %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-700">
+                  {{ grupo.name }}
+                </span>
+                {% empty %}
+                <span class="text-xs text-slate-400">Sin grupos</span>
+                {% endfor %}
+              </div>
+            </td>
+
+            <td class="px-4 py-3 text-center">
+              {% if u.is_active %}
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                Activo
+              </span>
+              {% else %}
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                Inactivo
+              </span>
+              {% endif %}
+            </td>
+
+            <td class="px-4 py-3 text-center">
+              <div class="flex items-center justify-center gap-1">
+
+                {# Editar #}
+                <a href="{% url 'dashboard:usuario_editar' u.id %}"
+                   class="inline-flex items-center px-2.5 py-1 bg-slate-100 hover:bg-blue-100 hover:text-blue-700 rounded-lg text-xs font-medium transition-colors"
+                   title="Editar">
+                  <span class="material-symbols-outlined text-[14px]">edit</span>
+                </a>
+
+                {# Permisos #}
+                <a href="{% url 'dashboard:usuario_permisos' u.id %}"
+                   class="inline-flex items-center px-2.5 py-1 bg-slate-100 hover:bg-purple-100 hover:text-purple-700 rounded-lg text-xs font-medium transition-colors"
+                   title="Permisos">
+                  <span class="material-symbols-outlined text-[14px]">key</span>
+                </a>
+
+                {# Desactivar — solo si está activo y no es staff #}
+                {% if u.is_active and not u.is_staff %}
+                <form method="post" action="{% url 'dashboard:usuario_desactivar' u.id %}"
+                      onsubmit="return confirm('¿Desactivar al usuario {{ u.username }}?')">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="inline-flex items-center px-2.5 py-1 bg-slate-100 hover:bg-red-100 hover:text-red-700 rounded-lg text-xs font-medium transition-colors"
+                          title="Desactivar">
+                    <span class="material-symbols-outlined text-[14px]">person_off</span>
+                  </button>
+                </form>
+                {% endif %}
+
+              </div>
+            </td>
+
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="py-16 text-center">
+      <span class="material-symbols-outlined text-4xl text-slate-300">group_off</span>
+      <p class="mt-2 text-slate-400 text-sm">No se encontraron usuarios</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

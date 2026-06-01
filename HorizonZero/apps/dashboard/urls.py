@@ -3,6 +3,13 @@ from . import views
 
 app_name = "dashboard"
 
+urlpatterns_system_usuarios = [
+    path("usuarios/sistema/",                          views.usuarios_home,         name="usuarios_home"),
+    path("usuarios/sistema/crear/",                    views.usuario_crear,         name="usuario_crear"),
+    path("usuarios/sistema/<int:user_id>/editar/",     views.usuario_editar,        name="usuario_editar"),
+    path("usuarios/sistema/<int:user_id>/desactivar/", views.usuario_desactivar,    name="usuario_desactivar"),
+    path("usuarios/sistema/<int:user_id>/permisos/", views.usuario_permisos, name="usuario_permisos"),
+]
 
 urlpatterns_perfil_agentes = [
         # ── Perfil de Agentes ──
@@ -45,6 +52,7 @@ urlpatterns_agentes = [
 
     
 ]
+
 
 
 
@@ -517,30 +525,10 @@ urlpatterns = [
     *urlpatterns_agentes,
     *urlpatterns_logs,
     *urlpatterns_perfil_agentes,
+    *urlpatterns_system_usuarios,
 ]
 
  
 
 
 
-"""
-# ---
-
-# Con esto listo, en el admin de Django se crean los grupos así:
-# ```
-
-Grupo "Administrador"
-    ✅ Todos los view_*
-
-Grupo "Encuestas Only"
-    ✅ view_encuestas
-    ✅ view_encuesta_satisfaccion
-    ✅ view_encuesta_feria_salud
-    ❌ view_formularios (no ve ese módulo)
-
-Grupo "Formularios Tarjetas"
-    ✅ view_formularios
-    ✅ view_formulario_tarjetas
-    ❌ view_formulario_ahorros
-
-"""

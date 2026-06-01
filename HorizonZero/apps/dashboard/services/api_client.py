@@ -44,3 +44,25 @@ class APIClient:
         )
         response.raise_for_status()
         return response.json()
+    
+    @classmethod
+    def put(cls, endpoint: str, data: dict = None, request=None) -> dict:
+        url = f"{settings.API_URL}/api/{endpoint}"
+        response = requests.put(
+            url, json=data or {},
+            headers=cls._headers(request),
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    @classmethod
+    def delete(cls, endpoint: str, request=None) -> dict:
+        url = f"{settings.API_URL}/api/{endpoint}"
+        response = requests.delete(
+            url,
+            headers=cls._headers(request),
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
