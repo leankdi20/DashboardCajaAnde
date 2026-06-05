@@ -423,15 +423,91 @@ def soli_redencion_puntos_export(request):
 @login_required
 @permiso_requerido("dashboard.view_soli_redencion_puntos")
 def soli_redencion_puntos_export_detalle(request, respuesta_id):
-    # Delegado al views.py original — mismo patrón de export detalle institucional
-    from apps.dashboard.views._excel_detalle import export_detalle_generico
     filas = ReporteSolicitudRedencionPuntos.obtener_detalle(respuesta_id)
-    if not filas: raise Http404
-    return export_detalle_generico(
-        request, filas[0], filas, respuesta_id,
-        titulo="CAJA DE ANDE — Redención de Puntos",
-        seccion_label="DATOS DE LA REDENCIÓN",
+    if not filas:
+        raise Http404
+
+    accionista = filas[0]
+    wb = Workbook(); ws = wb.active; ws.title = f"Redención #{respuesta_id}"
+
+    AZUL, AMARILLO, BLANCO = "003FB7", "FFC900", "FFFFFF"
+    GRIS_LABEL, GRIS_BORDE, NEGRO = "F1F5F9", "E2E8F0", "1E293B"
+
+    def fill(h): return PatternFill("solid", fgColor=h)
+    def borde(): return Border(bottom=Side(style="thin", color=GRIS_BORDE))
+    def hrow(row, texto, cf, ct=BLANCO):
+        ws.merge_cells(f"A{row}:D{row}")
+        c = ws.cell(row=row, column=1, value=f"  {texto}")
+        c.fill = fill(cf); c.font = Font(bold=True, color=ct, size=11, name="Arial")
+        c.alignment = Alignment(vertical="center"); ws.row_dimensions[row].height = 28
+    def drow(row, label, valor):
+        ws.merge_cells(f"A{row}:B{row}")
+        lc = ws.cell(row=row, column=1, value=label)
+        lc.fill = fill(GRIS_LABEL); lc.font = Font(bold=True, color="64748B", size=9, name="Arial")
+        lc.alignment = Alignment(vertical="center", indent=2); lc.border = borde()
+        ws.merge_cells(f"C{row}:D{row}")
+        vc = ws.cell(row=row, column=3, value=valor or "—")
+        vc.font = Font(color=NEGRO, size=10, name="Arial")
+        vc.alignment = Alignment(vertical="center", indent=2); vc.border = borde()
+        ws.row_dimensions[row].height = 22
+
+    for col, w in enumerate([5, 25, 35, 25], 1):
+        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = w
+
+    r = 1
+    ws.merge_cells(f"A{r}:D{r}")
+    t = ws.cell(row=r, column=1, value="CAJA DE ANDE — Solicitud Redención de Puntos")
+    t.fill = fill(AZUL); t.font = Font(bold=True, color=BLANCO, size=13, name="Arial")
+    t.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[r].height = 36; r += 1
+
+    ws.merge_cells(f"A{r}:D{r}")
+    s = ws.cell(row=r, column=1,
+                value=f"ID #{respuesta_id}  ·  Generado el {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+    s.fill = fill("002A80"); s.font = Font(color="93C5FD", size=9, name="Arial")
+    s.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[r].height = 18; r += 1
+    ws.row_dimensions[r].height = 8; r += 1
+
+    fecha = accionista.get("FechaHora")
+    fstr  = fecha.strftime("%d/%m/%Y %H:%M") if hasattr(fecha, "strftime") else str(fecha or "—")
+
+    hrow(r, "DATOS DEL ACCIONISTA", AZUL); r += 1
+    drow(r, "CÉDULA",    (accionista.get("Cedula")   or "").strip()); r += 1
+    drow(r, "NOMBRE",    (accionista.get("Nombre")   or "").strip()); r += 1
+    drow(r, "TELÉFONO",  (accionista.get("Telefono") or "").strip()); r += 1
+    drow(r, "CORREO",    (accionista.get("Correo")   or "").strip()); r += 1
+    ws.row_dimensions[r].height = 8; r += 1
+
+    hrow(r, "DATOS DE LA REDENCIÓN", AMARILLO, NEGRO); r += 1
+    drow(r, "TIPO DE REDENCIÓN", accionista.get("TipoRedencion")); r += 1
+    drow(r, "FECHA / HORA",      fstr); r += 1
+    ws.row_dimensions[r].height = 8; r += 1
+
+    # Filas adicionales si hay más de una pregunta/respuesta
+    if len(filas) > 1:
+        hrow(r, "DETALLE DE RESPUESTAS", AZUL); r += 1
+        for fila in filas:
+            drow(r, fila.get("Pregunta") or "—", fila.get("Respuesta") or "—"); r += 1
+        ws.row_dimensions[r].height = 8; r += 1
+
+    ws.merge_cells(f"A{r}:D{r}")
+    pie = ws.cell(row=r, column=1,
+                  value="Documento generado automáticamente por HorizonZero — Caja de ANDE")
+    pie.fill = fill(GRIS_LABEL); pie.font = Font(color="94A3B8", size=8, name="Arial", italic=True)
+    pie.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[r].height = 18
+    ws.freeze_panes = "A3"; ws.sheet_view.zoomScale = 110
+
+    nombre = (accionista.get("Nombre") or "solicitud").strip().replace(" ", "_")
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+    response["Content-Disposition"] = (
+        f'attachment; filename="redencion_puntos_{respuesta_id}_{nombre}.xlsx"'
+    )
+    wb.save(response)
+    return response
 
 
 # ════════════════════════════════════════════════════════════════
@@ -504,8 +580,87 @@ def caja_ande_asistencia_export(request):
 @permiso_requerido("dashboard.view_caja_ande_asistencia")
 def caja_ande_asistencia_export_detalle(request, respuesta_id):
     filas = ReporteCajaAndeAsistencia.obtener_detalle(respuesta_id)
-    if not filas: raise Http404
-    # Mismo patrón institucional — copiar bloque de views.py original
-    # (idéntico al del views.py original — se omite aquí para brevedad,
-    #  copiar el bloque caja_ande_asistencia_export_detalle de views.py)
-    raise NotImplementedError("Copiar bloque de views.py original aquí")
+    if not filas:
+        raise Http404
+
+    accionista = filas[0]
+    wb = Workbook(); ws = wb.active; ws.title = f"Asistencia #{respuesta_id}"
+
+    AZUL, AMARILLO, BLANCO = "003FB7", "FFC900", "FFFFFF"
+    GRIS_LABEL, GRIS_BORDE, NEGRO = "F1F5F9", "E2E8F0", "1E293B"
+
+    def fill(h): return PatternFill("solid", fgColor=h)
+    def borde(): return Border(bottom=Side(style="thin", color=GRIS_BORDE))
+    def hrow(row, texto, cf, ct=BLANCO):
+        ws.merge_cells(f"A{row}:D{row}")
+        c = ws.cell(row=row, column=1, value=f"  {texto}")
+        c.fill = fill(cf); c.font = Font(bold=True, color=ct, size=11, name="Arial")
+        c.alignment = Alignment(vertical="center"); ws.row_dimensions[row].height = 28
+    def drow(row, label, valor):
+        ws.merge_cells(f"A{row}:B{row}")
+        lc = ws.cell(row=row, column=1, value=label)
+        lc.fill = fill(GRIS_LABEL); lc.font = Font(bold=True, color="64748B", size=9, name="Arial")
+        lc.alignment = Alignment(vertical="center", indent=2); lc.border = borde()
+        ws.merge_cells(f"C{row}:D{row}")
+        vc = ws.cell(row=row, column=3, value=valor or "—")
+        vc.font = Font(color=NEGRO, size=10, name="Arial")
+        vc.alignment = Alignment(vertical="center", indent=2); vc.border = borde()
+        ws.row_dimensions[row].height = 22
+
+    for col, w in enumerate([5, 25, 35, 25], 1):
+        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = w
+
+    r = 1
+    ws.merge_cells(f"A{r}:D{r}")
+    t = ws.cell(row=r, column=1, value="CAJA DE ANDE — Solicitud Caja ANDE Asistencia")
+    t.fill = fill(AZUL); t.font = Font(bold=True, color=BLANCO, size=13, name="Arial")
+    t.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[r].height = 36; r += 1
+
+    ws.merge_cells(f"A{r}:D{r}")
+    s = ws.cell(row=r, column=1,
+                value=f"ID #{respuesta_id}  ·  Generado el {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+    s.fill = fill("002A80"); s.font = Font(color="93C5FD", size=9, name="Arial")
+    s.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[r].height = 18; r += 1
+    ws.row_dimensions[r].height = 8; r += 1
+
+    fecha = accionista.get("FechaHora")
+    fstr  = fecha.strftime("%d/%m/%Y %H:%M") if hasattr(fecha, "strftime") else str(fecha or "—")
+
+    hrow(r, "DATOS DEL ACCIONISTA", AZUL); r += 1
+    drow(r, "CÉDULA",  (accionista.get("Cedula") or "").strip()); r += 1
+    drow(r, "NOMBRE",  (accionista.get("Nombre") or "").strip()); r += 1
+    drow(r, "CORREO",  (accionista.get("Correo") or "").strip()); r += 1
+    ws.row_dimensions[r].height = 8; r += 1
+
+    hrow(r, "DATOS DE LA SOLICITUD", AMARILLO, NEGRO); r += 1
+    drow(r, "PLAN DE ASISTENCIA", accionista.get("TipoPlan")); r += 1
+    drow(r, "TIPO DE TARJETA",    accionista.get("TipoTarjeta")); r += 1
+    drow(r, "FECHA / HORA",       fstr); r += 1
+    ws.row_dimensions[r].height = 8; r += 1
+
+    # Detalle de preguntas/respuestas si hay más de una fila
+    if len(filas) > 1:
+        hrow(r, "DETALLE DE RESPUESTAS", AZUL); r += 1
+        for fila in filas:
+            drow(r, fila.get("Pregunta") or "—", fila.get("Respuesta") or "—"); r += 1
+        ws.row_dimensions[r].height = 8; r += 1
+
+    ws.merge_cells(f"A{r}:D{r}")
+    pie = ws.cell(row=r, column=1,
+                  value="Documento generado automáticamente por HorizonZero — Caja de ANDE")
+    pie.fill = fill(GRIS_LABEL); pie.font = Font(color="94A3B8", size=8, name="Arial", italic=True)
+    pie.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[r].height = 18
+    ws.freeze_panes = "A3"; ws.sheet_view.zoomScale = 110
+
+    nombre = (accionista.get("Nombre") or "solicitud").strip().replace(" ", "_")
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = (
+        f'attachment; filename="caja_ande_asistencia_{respuesta_id}_{nombre}.xlsx"'
+    )
+    wb.save(response)
+    return response

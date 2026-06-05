@@ -40,7 +40,7 @@ class APIClient:
         response = requests.post(
             url, json=data or {},
             headers=cls._headers(request),
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
         return response.json()

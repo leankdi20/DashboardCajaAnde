@@ -59,23 +59,39 @@
       <div>
         <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Unidad</label>
         <select id="sel-unidad"
-                class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                {% if unidad_bloqueada %}disabled{% endif %}
+                class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary
+                       {% if unidad_bloqueada %}opacity-60 cursor-not-allowed bg-slate-50{% endif %}">
           <option value="">Todas</option>
           {% for u in opciones.unidades %}
           <option value="{{ u.Unidad }}" {% if filtro_unidad == u.Unidad %}selected{% endif %}>{{ u.Unidad }}</option>
           {% endfor %}
         </select>
+        {% if unidad_bloqueada %}
+        <p class="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
+          <span class="material-symbols-outlined text-[12px]">lock</span>
+          Restringido a tu unidad
+        </p>
+        {% endif %}
       </div>
 
       <div>
         <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Sucursal</label>
         <select id="sel-sucursal"
-                class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                {% if sucursal_bloqueada %}disabled{% endif %}
+                class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary
+                       {% if sucursal_bloqueada %}opacity-60 cursor-not-allowed bg-slate-50{% endif %}">
           <option value="">Todas</option>
           {% for s in opciones.sucursales %}
           <option value="{{ s.Sucursal }}" {% if filtro_sucursal == s.Sucursal %}selected{% endif %}>{{ s.Sucursal }}</option>
           {% endfor %}
         </select>
+        {% if sucursal_bloqueada %}
+        <p class="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
+          <span class="material-symbols-outlined text-[12px]">lock</span>
+          Restringido a tu sucursal
+        </p>
+        {% endif %}
       </div>
 
       <div>

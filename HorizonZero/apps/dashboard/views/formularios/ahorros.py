@@ -257,7 +257,7 @@ def soli_ahorro_mod_cuota_export(request):
         ws.cell(row=ri, column=5, value=row.get("TipoAhorro"))
         ws.cell(row=ri, column=6, value=row.get("NumeroContrato"))
         ws.cell(row=ri, column=7, value=row.get("TipoModificacion"))
-        c_m = ws.cell(row=ri, column=8, value=int(monto) if monto else 0)
+        c_m = ws.cell(row=ri, column=8, value=int(float(monto)) if monto else 0)
         c_m.number_format = "₡#,##0"
         if ri % 2 == 0:
             ff = _fill("E8EFFE")
@@ -301,7 +301,7 @@ def soli_ahorro_mod_cuota_export_detalle(request, respuesta_id):
     lc.fill = _fill("F1F5F9"); lc.font = _font(True, "64748B", 9)
     lc.alignment = Alignment(vertical="center", indent=2); lc.border = _borde()
     ws.merge_cells(f"C{r}:D{r}")
-    vc = ws.cell(row=r, column=3, value=int(monto) if monto else 0)
+    vc = ws.cell(row=r, column=3, value=int(float(monto)) if monto else 0)
     vc.font = _font(True); vc.number_format = "₡#,##0"
     vc.alignment = Alignment(vertical="center", indent=2); vc.border = _borde()
     ws.row_dimensions[r].height = 22; r += 1
@@ -498,8 +498,8 @@ def soli_autorizacion_ahorro_nuevo_export(request):
         ws.cell(row=ri, column=6,  value=row.get("FormaPago"))
         ws.cell(row=ri, column=7,  value=row.get("TipoReinversion"))
         ws.cell(row=ri, column=8,  value=row.get("RetiroIntereses"))
-        c_mc  = ws.cell(row=ri, column=9,  value=int(mc)  if mc  else None)
-        c_mda = ws.cell(row=ri, column=10, value=int(mda) if mda else None)
+        c_mc  = ws.cell(row=ri, column=9,  value=int(float(mc))  if mc  else None)
+        c_mda = ws.cell(row=ri, column=10, value=int(float(mda)) if mda else None)
         if mc:  c_mc.number_format  = "₡#,##0"
         if mda: c_mda.number_format = "₡#,##0"
         if ri % 2 == 0:
@@ -547,7 +547,7 @@ def soli_autorizacion_ahorro_nuevo_export_detalle(request, respuesta_id):
         lc.fill = _fill("F1F5F9"); lc.font = _font(True, "64748B", 9)
         lc.alignment = Alignment(vertical="center", indent=2); lc.border = _borde()
         ws.merge_cells(f"C{r}:D{r}")
-        vc = ws.cell(row=r, column=3, value=int(monto) if monto else "—")
+        vc = ws.cell(row=r, column=3, value=int(float(monto)) if monto else "—")
         if monto: vc.number_format = "₡#,##0"
         vc.font = _font(True); vc.alignment = Alignment(vertical="center", indent=2); vc.border = _borde()
         ws.row_dimensions[r].height = 22; r += 1

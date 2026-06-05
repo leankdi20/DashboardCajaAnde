@@ -19,25 +19,17 @@
 
 {% block content %}
 <div class="p-4 md:p-6 flex flex-col gap-4">
-{% comment %} 
-  {# ══════════════════════════════════════════════════════════
-     HEADER — fondo limpio blanco con acento de color lateral
-  ══════════════════════════════════════════════════════════ #} {% endcomment %}
+
   <section class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-
-    {# Barra de acento superior #}
     <div class="h-1.5 {% if tipo == 'sat' %}bg-gradient-to-r from-primary to-blue-400{% else %}bg-gradient-to-r from-cyan-500 to-blue-500{% endif %}"></div>
-
     <div class="p-5 md:p-6">
       <div class="flex flex-wrap items-start gap-4 mb-5">
 
-        {# Avatar #}
         <div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0
           {% if tipo == 'sat' %}bg-primary{% else %}bg-cyan-500{% endif %}">
           <span class="text-2xl font-black text-white">{{ agente_nombre|slice:":1" }}</span>
         </div>
 
-        {# Info principal #}
         <div class="flex-1 min-w-0">
           <div class="flex flex-wrap items-center gap-2 mb-1.5">
             <h2 class="text-lg md:text-xl font-black text-slate-800 leading-tight">{{ agente_nombre }}</h2>
@@ -63,7 +55,7 @@
             {% if kpis.primera %}
             <span class="inline-flex items-center gap-1 text-xs text-slate-400">
               <span class="material-symbols-outlined text-[13px]">calendar_today</span>
-              Desde {{ kpis.primera|date:"d/m/Y" }}
+              Desde {{ kpis.primera }}
             </span>
             {% endif %}
             {% if tipo == 'od' %}
@@ -75,59 +67,52 @@
           </div>
         </div>
 
-        {# Ranking badge #}
-        {% if ranking_data.posicion %}
-        <div class="flex-shrink-0 text-center border-2 rounded-xl px-4 py-2.5
+        {# Ranking badge — se actualiza via JS #}
+        <div id="ranking-badge" class="flex-shrink-0 text-center border-2 rounded-xl px-4 py-2.5 hidden
           {% if tipo == 'sat' %}border-primary/20 bg-primary/5{% else %}border-cyan-200 bg-cyan-50{% endif %}">
-          <p class="text-2xl font-black {% if tipo == 'sat' %}text-primary{% else %}text-cyan-600{% endif %} leading-none">#{{ ranking_data.posicion }}</p>
-          <p class="text-[10px] text-slate-400 mt-0.5">de {{ ranking_data.total_agentes }}</p>
+          <p class="text-2xl font-black {% if tipo == 'sat' %}text-primary{% else %}text-cyan-600{% endif %} leading-none" id="ranking-posicion">—</p>
+          <p class="text-[10px] text-slate-400 mt-0.5" id="ranking-total">—</p>
           <p class="text-[9px] text-slate-300 uppercase tracking-wider">ranking</p>
         </div>
-        {% endif %}
 
-        {# Filtro fecha #}
         <div class="flex items-center gap-1.5 flex-shrink-0">
-            <button type="button" id="btn-fecha"
-                    onclick="document.getElementById('form-fecha').classList.toggle('hidden')"
-                    class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 hover:border-primary transition-colors">
-                <span class="material-symbols-outlined text-[14px]">date_range</span>
-                {% if fecha_inicio or fecha_fin %}
-                    {{ fecha_inicio|default:"inicio" }} — {{ fecha_fin|default:"hoy" }}
-                {% else %}
-                    Filtrar por fecha
-                {% endif %}
-            </button>
-
-            <form method="GET" id="form-fecha"
-                  class="{% if not fecha_inicio and not fecha_fin %}hidden{% endif %} flex items-center gap-1.5">
-                <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}"
-                      min="2020-01-01" max="2030-12-31"
-                      class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none focus:border-primary"
-                      onchange="this.form.submit()">
-                <span class="text-slate-300 text-xs">—</span>
-                <input type="date" name="fecha_fin" value="{{ fecha_fin }}"
-                      min="2020-01-01" max="2030-12-31"
-                      class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none focus:border-primary"
-                      onchange="this.form.submit()">
-                {% if fecha_inicio or fecha_fin %}
-                <a href="{% if tipo == 'sat' %}{% url 'dashboard:perfil_agente_sat_detalle' agente_nombre %}{% else %}{% url 'dashboard:perfil_agente_od_detalle' agente_nombre %}{% endif %}"
-                  class="p-1.5 bg-slate-100 hover:bg-red-50 hover:border-red-200 border border-slate-200 rounded-lg transition-colors">
-                    <span class="material-symbols-outlined text-[14px] text-slate-500">close</span>
-                </a>
-                {% endif %}
-            </form>
+          <button type="button" id="btn-fecha"
+                  onclick="document.getElementById('form-fecha').classList.toggle('hidden')"
+                  class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 hover:border-primary transition-colors">
+            <span class="material-symbols-outlined text-[14px]">date_range</span>
+            {% if fecha_inicio or fecha_fin %}
+              {{ fecha_inicio|default:"inicio" }} — {{ fecha_fin|default:"hoy" }}
+            {% else %}
+              Filtrar por fecha
+            {% endif %}
+          </button>
+          <form method="GET" id="form-fecha"
+                class="{% if not fecha_inicio and not fecha_fin %}hidden{% endif %} flex items-center gap-1.5">
+            <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}"
+                   min="2020-01-01" max="2030-12-31"
+                   class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none focus:border-primary"
+                   onchange="this.form.submit()">
+            <span class="text-slate-300 text-xs">—</span>
+            <input type="date" name="fecha_fin" value="{{ fecha_fin }}"
+                   min="2020-01-01" max="2030-12-31"
+                   class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none focus:border-primary"
+                   onchange="this.form.submit()">
+            {% if fecha_inicio or fecha_fin %}
+            <a href="{% if tipo == 'sat' %}{% url 'dashboard:perfil_agente_sat_detalle' agente_nombre %}{% else %}{% url 'dashboard:perfil_agente_od_detalle' agente_nombre %}{% endif %}"
+               class="p-1.5 bg-slate-100 hover:bg-red-50 hover:border-red-200 border border-slate-200 rounded-lg transition-colors">
+              <span class="material-symbols-outlined text-[14px] text-slate-500">close</span>
+            </a>
+            {% endif %}
+          </form>
         </div>
 
       </div>
 
-      {# KPIs hero — fila de tarjetas sobre fondo claro #}
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-
         <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Encuestas</p>
           <p class="text-2xl font-black {% if tipo == 'sat' %}text-primary{% else %}text-cyan-600{% endif %}">{{ kpis.total_enc }}</p>
         </div>
-
         <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Satisfacción</p>
           <p class="text-2xl font-black
@@ -136,39 +121,32 @@
             {% else %}text-red-500{% endif %}">{{ kpis.promedio_pct }}%</p>
           <p class="text-[10px] text-slate-400">{{ kpis.promedio }}/{% if tipo == 'od' %}3{% else %}5{% endif %}</p>
         </div>
-
         <div class="bg-green-50 border border-green-100 rounded-xl p-3 text-center">
           <p class="text-[10px] font-bold text-green-500 uppercase tracking-wider mb-1">Promotores</p>
           <p class="text-2xl font-black text-green-600">{{ kpis.promotores_pct }}%</p>
           <p class="text-[10px] text-green-400">{{ kpis.promotores }}</p>
         </div>
-
         <div class="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
           <p class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-1">Pasivos</p>
           <p class="text-2xl font-black text-amber-600">{{ kpis.pasivos_pct }}%</p>
           <p class="text-[10px] text-amber-400">{{ kpis.pasivos }}</p>
         </div>
-
         <div class="bg-red-50 border border-red-100 rounded-xl p-3 text-center">
           <p class="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-1">Detractores</p>
           <p class="text-2xl font-black text-red-500">{{ kpis.detractores_pct }}%</p>
           <p class="text-[10px] text-red-300">{{ kpis.detractores }}</p>
         </div>
-
         <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Última enc.</p>
           <p class="text-sm font-black text-slate-700">
-            {% if kpis.ultima %}{{ kpis.ultima|date:"d/m/Y" }}{% else %}—{% endif %}
+            {% if kpis.ultima %}{{ kpis.ultima }}{% else %}—{% endif %}
           </p>
         </div>
-
       </div>
     </div>
   </section>
 
-  {% comment %} {# ══════════════════════════════════════════════════════════
-     FILA 1 — Dona NPS + Tendencia + Volumen histórico
-  ══════════════════════════════════════════════════════════ #} {% endcomment %}
+  {# FILA 1 — Dona + Tendencia + Volumen #}
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
     <div class="bg-white border border-slate-100 rounded-2xl p-5">
@@ -209,25 +187,26 @@
 
   </div>
 
-  {% comment %} {# ══════════════════════════════════════════════════════════
-     FILA 2 — Ranking + Comparativa + Gestión/Pregunta
-  ══════════════════════════════════════════════════════════ #} {% endcomment %}
+  {# FILA 2 — Ranking + Comparativa + Gestión #}
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
+    {# ── RANKING — spinner visible mientras carga ── #}
     <div class="bg-white border border-slate-100 rounded-2xl p-5">
       <div class="flex items-center justify-between mb-1">
         <h3 class="text-sm font-bold text-slate-700">Ranking — {{ agente_info.Unidad|default:"Global" }}</h3>
         <span class="material-symbols-outlined text-slate-300 text-[18px]">leaderboard</span>
       </div>
-      <p class="text-xs text-slate-400 mb-3">
-        {% if ranking_data.posicion %}Posición #{{ ranking_data.posicion }} de {{ ranking_data.total_agentes }}
-        {% else %}Sin datos{% endif %}
-      </p>
+      <p class="text-xs text-slate-400 mb-3" id="txt-ranking-pos">Calculando posición...</p>
       <div class="relative h-48" id="wrap-ranking">
-        <div class="h-48 bg-slate-100 rounded-xl animate-pulse"></div>
+        {# Spinner visible mientras carga #}
+        <div class="h-48 flex flex-col items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-slate-300 text-[32px] animate-spin">progress_activity</span>
+          <p class="text-xs text-slate-400">Cargando ranking...</p>
+        </div>
       </div>
     </div>
 
+    {# ── COMPARATIVA — spinner visible mientras carga ── #}
     <div class="bg-white border border-slate-100 rounded-2xl p-5">
       <div class="flex items-center justify-between mb-1">
         <h3 class="text-sm font-bold text-slate-700">Comparativa institucional</h3>
@@ -235,13 +214,14 @@
       </div>
       <p class="text-xs text-slate-400 mb-4">Agente vs promedio de la unidad</p>
       <div id="wrap-comparativa">
-        <div class="space-y-3">
-          {% for i in "1234" %}<div class="h-10 bg-slate-100 rounded-xl animate-pulse"></div>{% endfor %}
+        {# Spinner visible mientras carga #}
+        <div class="flex flex-col items-center justify-center gap-2 py-8">
+          <span class="material-symbols-outlined text-slate-300 text-[32px] animate-spin">progress_activity</span>
+          <p class="text-xs text-slate-400">Calculando comparativa...</p>
         </div>
       </div>
     </div>
 
-    {# Gestión/Pregunta — etiquetas solo en tooltip ── #}
     <div class="bg-white border border-slate-100 rounded-2xl p-5">
       <div class="flex items-center justify-between mb-1">
         <h3 class="text-sm font-bold text-slate-700">
@@ -257,9 +237,7 @@
 
   </div>
 
-  {% comment %} {# ══════════════════════════════════════════════════════════
-     FILA 3 — Detractores recientes + Últimas encuestas
-  ══════════════════════════════════════════════════════════ #} {% endcomment %}
+  {# FILA 3 — Detractores + Últimas #}
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
     <div class="bg-red-50 border border-red-100 rounded-2xl overflow-hidden">
@@ -329,7 +307,6 @@ document.addEventListener('DOMContentLoaded', function () {
     promedio_pct: {{ kpis.promedio_pct }},
   };
 
-  // ── Helpers ───────────────────────────────────────────────────
   function insertCanvas(wrapperId, canvasId) {
     const wrap = document.getElementById(wrapperId);
     wrap.innerHTML = `<canvas id="${canvasId}" style="max-height:100%;width:100%"></canvas>`;
@@ -341,8 +318,6 @@ document.addEventListener('DOMContentLoaded', function () {
   function emoji(c)    { return { promotor:'😊', pasivo:'😐', detractor:'😞' }[c] || ''; }
   function etiqueta(c) { return { promotor:'Promotor', pasivo:'Pasivo', detractor:'Detractor' }[c] || ''; }
   function clsProm(p)  { return p >= (ESCALA === 3 ? 2.5 : 4) ? 'text-green-600' : p >= (ESCALA === 3 ? 2 : 3) ? 'text-amber-500' : 'text-red-500'; }
-
-  // Truncar etiqueta para eje Y (máx caracteres)
   function truncar(str, max) {
     return str && str.length > max ? str.slice(0, max) + '…' : (str || '');
   }
@@ -418,24 +393,46 @@ document.addEventListener('DOMContentLoaded', function () {
           }
         }
       });
+    })
+    .catch(() => {
+      document.getElementById('wrap-tendencia').innerHTML = '<p class="text-xs text-slate-400 text-center py-10">Error al cargar</p>';
+      document.getElementById('wrap-volumen').innerHTML   = '<p class="text-xs text-slate-400 text-center py-10">Error al cargar</p>';
     });
 
-  // ── Ranking ────────────────────────────────────────────────────
+  // ── Ranking + Comparativa ─────────────────────────────────────
   fetch(`${BASE_URL}?seccion=ranking`, FETCH_OPTS)
     .then(r => r.json())
     .then(d => {
+      // Actualizar badge de posición en el header
+      if (d.posicion) {
+        const badge = document.getElementById('ranking-badge');
+        document.getElementById('ranking-posicion').textContent = `#${d.posicion}`;
+        document.getElementById('ranking-total').textContent    = `de ${d.total}`;
+        badge.classList.remove('hidden');
+      }
+
+      // Actualizar texto de posición en la card
+      const txtPos = document.getElementById('txt-ranking-pos');
+      if (d.posicion) {
+        txtPos.textContent = `Posición #${d.posicion} de ${d.total}`;
+      } else {
+        txtPos.textContent = 'Sin datos de ranking';
+      }
+
       if (!d.nombres?.length) {
         document.getElementById('wrap-ranking').innerHTML =
           '<p class="text-xs text-slate-400 text-center py-10">Sin datos de ranking</p>';
+        document.getElementById('wrap-comparativa').innerHTML =
+          '<p class="text-xs text-slate-400 text-center py-8">Sin datos</p>';
         return;
       }
 
-      // Comparativa institucional
+      // Comparativa
       const promInst = d.promedios.length
         ? Math.round(d.promedios.reduce((a, b) => a + b, 0) / d.promedios.length)
         : 0;
-      const miProm = KPIS.promedio_pct;
-      const diff   = miProm - promInst;
+      const miProm  = KPIS.promedio_pct;
+      const diff    = miProm - promInst;
       const diffTxt = diff >= 0 ? `+${diff}%` : `${diff}%`;
       const diffCls = diff >= 0 ? 'text-green-600 bg-green-50 border-green-200'
                                  : 'text-red-500 bg-red-50 border-red-200';
@@ -467,7 +464,6 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>`).join('')}
         </div>`;
 
-      // Ranking chart
       const cv = insertCanvas('wrap-ranking', 'chart-ranking');
       const labelsCortos = d.nombres.map(n => truncar(n, 14));
       new Chart(cv, {
@@ -487,7 +483,6 @@ document.addEventListener('DOMContentLoaded', function () {
             legend: { display: false },
             tooltip: {
               callbacks: {
-                // Tooltip muestra nombre completo
                 title: ctx => d.nombres[ctx[0].dataIndex],
                 label: ctx => ` ${ctx.parsed.x}%`
               }
@@ -500,9 +495,14 @@ document.addEventListener('DOMContentLoaded', function () {
           }
         }
       });
+    })
+    .catch(() => {
+      document.getElementById('wrap-ranking').innerHTML     = '<p class="text-xs text-red-400 text-center py-10">Error al cargar ranking</p>';
+      document.getElementById('wrap-comparativa').innerHTML = '<p class="text-xs text-red-400 text-center py-8">Error al cargar</p>';
+      document.getElementById('txt-ranking-pos').textContent = 'Error al calcular';
     });
 
-  // ── Gestión/Pregunta — etiquetas SOLO en tooltip ───────────────
+  // ── Gestión/Pregunta ──────────────────────────────────────────
   fetch(`${BASE_URL}?seccion=gestion`, FETCH_OPTS)
     .then(r => r.json())
     .then(d => {
@@ -511,24 +511,16 @@ document.addEventListener('DOMContentLoaded', function () {
           '<p class="text-xs text-slate-400 text-center py-10">Sin datos</p>';
         return;
       }
-
-      const nombresCompletos = [...d.labels];  // guardar para tooltip
-      const labelsCortos = d.labels.map((_, i) => `#${i + 1}`); // eje X solo "#1","#2"...
-
+      const nombresCompletos = [...d.labels];
+      const labelsCortos     = d.labels.map((_, i) => `#${i + 1}`);
       const cv = insertCanvas('wrap-gestion', 'chart-gestion');
       new Chart(cv, {
         type: 'bar',
         data: {
           labels: labelsCortos,
           datasets: [
-            {
-              label: 'Satisfacción %', data: d.promedios,
-              backgroundColor: AZUL, borderRadius: 4, yAxisID: 'y'
-            },
-            {
-              label: 'Encuestas', data: d.totales,
-              backgroundColor: 'rgba(226,232,240,0.7)', borderRadius: 4, yAxisID: 'y1'
-            }
+            { label: 'Satisfacción %', data: d.promedios, backgroundColor: AZUL, borderRadius: 4, yAxisID: 'y' },
+            { label: 'Encuestas', data: d.totales, backgroundColor: 'rgba(226,232,240,0.7)', borderRadius: 4, yAxisID: 'y1' }
           ]
         },
         options: {
@@ -537,23 +529,21 @@ document.addEventListener('DOMContentLoaded', function () {
             legend: { labels: { font: { size: 9 }, boxWidth: 8, padding: 8 } },
             tooltip: {
               callbacks: {
-                // Tooltip muestra nombre completo de la gestión/pregunta
                 title: ctx => nombresCompletos[ctx[0].dataIndex] || '',
-                label: ctx => ctx.datasetIndex === 0
-                  ? ` Satisfacción: ${ctx.parsed.y}%`
-                  : ` Encuestas: ${ctx.parsed.y}`
+                label: ctx => ctx.datasetIndex === 0 ? ` Satisfacción: ${ctx.parsed.y}%` : ` Encuestas: ${ctx.parsed.y}`
               }
             }
           },
           scales: {
-            x: { ticks: { font: { size: 10 } }, grid: { display: false } },
-            y:  { beginAtZero: true, max: 100, grid: { color: '#f1f5f9' },
-                  ticks: { font: { size: 9 }, callback: v => v + '%' } },
-            y1: { position: 'right', beginAtZero: true, grid: { display: false },
-                  ticks: { font: { size: 9 } } }
+            x:  { ticks: { font: { size: 10 } }, grid: { display: false } },
+            y:  { beginAtZero: true, max: 100, grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 }, callback: v => v + '%' } },
+            y1: { position: 'right', beginAtZero: true, grid: { display: false }, ticks: { font: { size: 9 } } }
           }
         }
       });
+    })
+    .catch(() => {
+      document.getElementById('wrap-gestion').innerHTML = '<p class="text-xs text-red-400 text-center py-10">Error al cargar</p>';
     });
 
   // ── Últimas + Detractores ──────────────────────────────────────
@@ -607,7 +597,6 @@ document.addEventListener('DOMContentLoaded', function () {
           </div>`;
       }
 
-      // Detractores panel
       const detractores = (d.ultimas || []).filter(u => u.clasificacion === 'detractor');
       document.getElementById('badge-detractores').textContent = detractores.length;
       const wrapD = document.getElementById('wrap-detractores');
@@ -639,6 +628,10 @@ document.addEventListener('DOMContentLoaded', function () {
             </a>
           </div>`).join('') + `</div>`;
       }
+    })
+    .catch(() => {
+      document.getElementById('wrap-ultimas').innerHTML    = '<p class="text-xs text-red-400 text-center py-10">Error al cargar</p>';
+      document.getElementById('wrap-detractores').innerHTML = '<p class="text-xs text-red-400 text-center py-8">Error al cargar</p>';
     });
 
 });

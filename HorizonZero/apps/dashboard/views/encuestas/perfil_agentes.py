@@ -85,28 +85,47 @@ def perfil_agente_od_detalle(request, agente_nombre):
 def perfil_agente_od_ajax(request, agente_nombre):
     return _perfil_agente_ajax(request, agente_nombre, "od")
 
+def _get_restricciones(request):
+    """Retorna unidad y sucursal del perfil del usuario — None si no tiene restricción."""
+    try:
+        unidad   = request.user.perfil.unidad.strip()   or None
+        sucursal = request.user.perfil.sucursal.strip() or None
+    except Exception:
+        unidad, sucursal = None, None
+    return unidad, sucursal
+
 
 # ── LÓGICA COMPARTIDA (privada) ───────────────────────────────────
 def _perfil_agentes_index(request, tipo):
     service  = _get_service(tipo)
     config   = PERFIL_CONFIG[tipo]
     opciones = service.obtener_opciones()
+
+    unidad_perfil, sucursal_perfil = _get_restricciones(request)
+
     return render(request, "dashboard/encuestas/perfil_agentes_index.html", {
         "opciones":            opciones,
-        "filtro_unidad":       request.GET.get("unidad", ""),
-        "filtro_sucursal":     request.GET.get("sucursal", ""),
+        "filtro_unidad":       unidad_perfil or request.GET.get("unidad", ""),
+        "filtro_sucursal":     sucursal_perfil or request.GET.get("sucursal", ""),
         "filtro_fecha_inicio": request.GET.get("fecha_inicio", ""),
         "filtro_fecha_fin":    request.GET.get("fecha_fin", ""),
         "buscar":              request.GET.get("q", ""),
         "tipo":                tipo,
         "config":              config,
+        "unidad_bloqueada":    unidad_perfil is not None,
+        "sucursal_bloqueada":  sucursal_perfil is not None,
     })
 
 
 def _perfil_agentes_data(request, tipo):
-    service      = _get_service(tipo)
-    unidad       = request.GET.get("unidad",       "").strip() or None
-    sucursal     = request.GET.get("sucursal",     "").strip() or None
+    service = _get_service(tipo)
+
+    unidad_perfil, sucursal_perfil = _get_restricciones(request)
+
+    # Si el perfil tiene restricción, ignorar el filtro manual del GET
+    unidad   = unidad_perfil   or request.GET.get("unidad",   "").strip() or None
+    sucursal = sucursal_perfil or request.GET.get("sucursal", "").strip() or None
+
     fecha_inicio = request.GET.get("fecha_inicio", "").strip() or None
     fecha_fin    = request.GET.get("fecha_fin",    "").strip() or None
     buscar       = request.GET.get("q",            "").strip().lower()
@@ -118,6 +137,7 @@ def _perfil_agentes_data(request, tipo):
     if buscar:
         agentes = [a for a in agentes if buscar in a["Agente"].lower()]
     return JsonResponse({"agentes": agentes, "total": len(agentes)})
+
 
 
 def _perfil_agente_detalle(request, agente_nombre, tipo):
@@ -137,13 +157,13 @@ def _perfil_agente_detalle(request, agente_nombre, tipo):
         return redirect(f"dashboard:{config['index_url']}")
 
     agente_info  = service.obtener_info(agente_nombre)
-    ranking_data = service.obtener_ranking(agente_info.get("Unidad", ""), agente_nombre)
+    
 
     return render(request, "dashboard/encuestas/perfil_agentes_detalle.html", {
         "agente_nombre": agente_nombre,
         "agente_info":   agente_info,
         "kpis":          kpis,
-        "ranking_data":  ranking_data,
+       
         "fecha_inicio":  fecha_inicio,
         "fecha_fin":     fecha_fin,
         "tipo":          tipo,
@@ -195,7 +215,7 @@ def _perfil_agente_ajax(request, agente_nombre, tipo):
             ultimas = service.obtener_ultimas(agente_nombre)
             data = [{
                 "respuesta_id":  u["respuesta_id"],
-                "fecha":         u["Fecha"].strftime("%d/%m/%Y") if u.get("Fecha") else "",
+                "fecha":         str(u.get("Fecha") or u.get("fecha") or ""),
                 "nombre":        u.get("Nombre")  or u.get("nombre")  or "",
                 "cedula":        u.get("Cedula")  or u.get("cedula")  or "",
                 "gestion":       u.get("Gestion") or u.get("gestion") or "",
