@@ -30,11 +30,13 @@ def _post_audit(data: dict) -> None:
             f"{api_url}/api/logs/crear/",
             json=data,
             headers={
-                "Content-Type":   "application/json",
-                "X-Internal-Key": key,
+                "X-API-Key": key,
+                "Connection": "close",
+                "Accept": "application/json",
             },
-            timeout=5,
-        )
+            timeout=10,
+            proxies={"http": None, "https": None},
+            )
         print(f">>> AUDIT RESPONSE: {response.status_code} | {response.text}")
     except Exception as e:
         print(f">>> AUDIT ERROR: {e}")

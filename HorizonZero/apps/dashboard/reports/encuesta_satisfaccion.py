@@ -1,5 +1,6 @@
 from ..services.db_service import ReportesDBService
-
+from datetime import datetime, timedelta
+import time
 
 class ReporteEncuestaSatisfaccion:
 
@@ -247,6 +248,51 @@ class ReporteEncuestaSatisfaccion:
             )) AS promedio_agente
         FROM base
     """
+    QUERY_DATOS_CON_PREGUNTAS = """
+        WITH base AS (
+            SELECT *
+            FROM dbo.vw_reporte_encuestas_satisfaccion
+            WHERE 1=1
+            {filtros_base}
+        ),
+        promedios AS (
+            SELECT respuesta_id,
+                AVG(CAST(
+                    CASE
+                        WHEN Pregunta = '¿Qué tan satisfecho está con la atención recibida el día de hoy?' THEN
+                            CASE Respuesta WHEN 'Muy satisfecho' THEN 5 WHEN 'Satisfecho' THEN 4
+                                WHEN 'Ni satisfecho ni insatisfecho' THEN 3 WHEN 'Poco satisfecho' THEN 2
+                                WHEN 'Nada satisfecho' THEN 1 ELSE NULL END
+                        WHEN Pregunta = '¿Cómo fue su experiencia al realizar su gestión el día de hoy?' THEN
+                            CASE Respuesta WHEN 'Muy fácil' THEN 5 WHEN 'Fácil' THEN 4
+                                WHEN 'Ni fácil ni difícil' THEN 3 WHEN 'Difícil' THEN 2
+                                WHEN 'Muy difícil' THEN 1 ELSE NULL END
+                        WHEN Pregunta = '¿Cómo califica su experiencia cuando visita Caja de ANDE?' THEN
+                            CASE Respuesta WHEN 'Muy satisfecho' THEN 5 WHEN 'Satisfecho' THEN 4
+                                WHEN 'Ni satisfecho ni insatisfecho' THEN 3 WHEN 'Poco satisfecho' THEN 2
+                                WHEN 'Nada satisfecho' THEN 1 ELSE NULL END
+                        ELSE NULL
+                    END AS FLOAT
+                )) AS promedio_encuesta
+            FROM base
+            GROUP BY respuesta_id
+        )
+        SELECT
+            b.respuesta_id, b.Fecha, b.Hora, b.Cedula, b.Nombre,
+            b.Agente, b.Sucursal, b.Unidad, b.Gestion,
+            b.Pregunta, b.Respuesta, b.orden,
+            p.promedio_encuesta,
+            CASE
+                WHEN p.promedio_encuesta >= 4 THEN 'promotor'
+                WHEN p.promedio_encuesta = 3  THEN 'pasivo'
+                WHEN p.promedio_encuesta <= 2 THEN 'detractor'
+                ELSE NULL
+            END AS clasificacion
+        FROM base b
+        JOIN promedios p ON b.respuesta_id = p.respuesta_id
+        {filtro_clasificacion}
+        ORDER BY b.Fecha DESC, b.respuesta_id, b.orden
+    """
 
     QUERY_PROMEDIO_ENCUESTA = """
         WITH base AS (
@@ -285,8 +331,31 @@ class ReporteEncuestaSatisfaccion:
     # ════════════════════════════════════════════════════════════════
 
     @classmethod
-    def obtener_timeline(cls) -> list:
-        return ReportesDBService.ejecutar_query(cls.QUERY_TIMELINE)
+    def obtener_timeline(cls, fecha_inicio: str = None, fecha_fin: str = None) -> list:
+        condiciones = []
+        params = []
+
+        if fecha_inicio:
+            condiciones.append("AND Fecha >= %s")
+            params.append(fecha_inicio)
+
+        if fecha_fin:
+            condiciones.append("AND Fecha <= %s")
+            params.append(fecha_fin + " 23:59:59")
+
+        sql = """
+            SELECT
+                YEAR(Fecha)                    AS anio,
+                MONTH(Fecha)                   AS mes,
+                COUNT(DISTINCT respuesta_id)   AS total
+            FROM dbo.vw_reporte_encuestas_satisfaccion
+            WHERE Fecha IS NOT NULL
+            {filtros}
+            GROUP BY YEAR(Fecha), MONTH(Fecha)
+            ORDER BY anio ASC, mes ASC
+        """.format(filtros=" ".join(condiciones))
+
+        return ReportesDBService.ejecutar_query(sql, params)
 
     @classmethod
     def obtener_kpis_globales(
@@ -356,50 +425,89 @@ class ReporteEncuestaSatisfaccion:
 
     @classmethod
     def obtener_datos(cls, filtros: dict = None) -> list[dict]:
-        """
-        Retorna una fila por encuesta.
-        La vista se lee UNA SOLA VEZ en el CTE base.
-        """
         condiciones, params = [], []
+        filtros = filtros or {}
 
+        # Filtro por defecto: últimos 30 días si no viene ninguna fecha
+        if not filtros.get("fecha_inicio") and not filtros.get("fecha_fin"):
+            filtros["fecha_inicio"] = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+            filtros["fecha_fin"] = datetime.now().strftime("%Y-%m-%d")
+
+        if filtros.get("agente"):
+            condiciones.append("AND Agente = %s")
+            params.append(filtros["agente"])
+        if filtros.get("sucursal"):
+            condiciones.append("AND Sucursal = %s")
+            params.append(filtros["sucursal"])
+        if filtros.get("unidad"):
+            condiciones.append("AND Unidad = %s")
+            params.append(filtros["unidad"])
+        if filtros.get("gestion"):
+            condiciones.append("AND Gestion = %s")
+            params.append(filtros["gestion"])
+        if filtros.get("cedula"):
+            condiciones.append("AND Cedula = %s")
+            params.append(filtros["cedula"])
+        if filtros.get("nombre"):
+            condiciones.append("AND Nombre = %s")
+            params.append(filtros["nombre"])
+        if filtros.get("fecha_inicio"):
+            condiciones.append("AND Fecha >= %s")
+            params.append(filtros["fecha_inicio"])
+        if filtros.get("fecha_fin"):
+            condiciones.append("AND Fecha <= %s")
+            params.append(filtros["fecha_fin"] + " 23:59:59")
+
+        filtro_clasificacion = ""
+        c = filtros.get("clasificacion")
+        if c == "promotor":
+            filtro_clasificacion = "WHERE p.promedio_encuesta >= 4"
+        elif c == "pasivo":
+            filtro_clasificacion = "WHERE p.promedio_encuesta = 3"
+        elif c == "detractor":
+            filtro_clasificacion = "WHERE p.promedio_encuesta <= 2"
+
+        sql = cls.QUERY_DATOS.format(
+            filtros_base=" ".join(condiciones),
+            filtro_clasificacion=filtro_clasificacion,
+        )
+        inicio_q = time.time()
+        resultado = ReportesDBService.ejecutar_query(sql, params)
+       
+        return resultado
+        # return ReportesDBService.ejecutar_query(sql, params)
+    
+    @classmethod
+    def obtener_datos_exportar(cls, filtros: dict = None) -> list[dict]:
+        """Retorna todas las filas con preguntas/respuestas para exportación."""
+        condiciones, params = [], []
         if filtros:
             if filtros.get("agente"):
-                condiciones.append("AND Agente = %s")
-                params.append(filtros["agente"])
+                condiciones.append("AND Agente = %s"); params.append(filtros["agente"])
             if filtros.get("sucursal"):
-                condiciones.append("AND Sucursal = %s")
-                params.append(filtros["sucursal"])
+                condiciones.append("AND Sucursal = %s"); params.append(filtros["sucursal"])
             if filtros.get("unidad"):
-                condiciones.append("AND Unidad = %s")
-                params.append(filtros["unidad"])
+                condiciones.append("AND Unidad = %s"); params.append(filtros["unidad"])
             if filtros.get("gestion"):
-                condiciones.append("AND Gestion = %s")
-                params.append(filtros["gestion"])
+                condiciones.append("AND Gestion = %s"); params.append(filtros["gestion"])
             if filtros.get("cedula"):
-                condiciones.append("AND Cedula = %s")
-                params.append(filtros["cedula"])
+                condiciones.append("AND Cedula = %s"); params.append(filtros["cedula"])
             if filtros.get("nombre"):
-                condiciones.append("AND Nombre = %s")
-                params.append(filtros["nombre"])
+                condiciones.append("AND Nombre = %s"); params.append(filtros["nombre"])
             if filtros.get("fecha_inicio"):
-                condiciones.append("AND Fecha >= %s")
-                params.append(filtros["fecha_inicio"])
+                condiciones.append("AND Fecha >= %s"); params.append(filtros["fecha_inicio"])
             if filtros.get("fecha_fin"):
-                condiciones.append("AND Fecha <= %s")
-                params.append(filtros["fecha_fin"] + " 23:59:59")
+                condiciones.append("AND Fecha <= %s"); params.append(filtros["fecha_fin"] + " 23:59:59")
 
         filtro_clasificacion = ""
         if filtros:
             c = filtros.get("clasificacion")
-            if c == "promotor":
-                filtro_clasificacion = "WHERE p.promedio_encuesta >= 4"
-            elif c == "pasivo":
-                filtro_clasificacion = "WHERE p.promedio_encuesta = 3"
-            elif c == "detractor":
-                filtro_clasificacion = "WHERE p.promedio_encuesta <= 2"
+            if c == "promotor":   filtro_clasificacion = "WHERE p.promedio_encuesta >= 4"
+            elif c == "pasivo":   filtro_clasificacion = "WHERE p.promedio_encuesta = 3"
+            elif c == "detractor": filtro_clasificacion = "WHERE p.promedio_encuesta <= 2"
 
-        sql = cls.QUERY_DATOS.format(
-            filtros_base=(" ".join(condiciones)),
+        sql = cls.QUERY_DATOS_CON_PREGUNTAS.format(
+            filtros_base=" ".join(condiciones),
             filtro_clasificacion=filtro_clasificacion,
         )
         return ReportesDBService.ejecutar_query(sql, params)

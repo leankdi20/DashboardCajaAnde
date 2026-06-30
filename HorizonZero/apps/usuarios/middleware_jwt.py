@@ -82,8 +82,13 @@ class JWTAuthMiddleware:
                 api_url  = settings.API_URL
                 response = http_requests.get(
                     f"{api_url}/api/auth/me/",
-                    headers={"Authorization": f"Bearer {token}"},
-                    timeout=5,
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Connection": "close",
+                        "Accept": "application/json",
+                    },
+                    timeout=10,
+                    proxies={"http": None, "https": None},
                 )
                 if response.status_code == 200:
                     datos = response.json()

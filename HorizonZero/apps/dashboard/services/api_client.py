@@ -9,6 +9,13 @@ class APIClient:
     Lee el token JWT de la cookie hz_token del request.
     """
 
+    _session = requests.Session()
+    _session.trust_env = False
+    _session.headers.update({
+        "Connection": "close",
+        "Accept": "application/json",
+    })
+
     @staticmethod
     def _headers(request=None) -> dict:
         token = ""
@@ -16,42 +23,44 @@ class APIClient:
             token = request.COOKIES.get("hz_token", "")
         return {
             "Authorization": f"Bearer {token}",
-            "Content-Type":  "application/json",
+            "Content-Type": "application/json",
+            "Connection": "close",
+            "Accept": "application/json",
         }
 
     @classmethod
-    def get(cls, endpoint: str, params: dict = None,
-            request=None) -> dict | list:
+    def get(cls, endpoint: str, params: dict = None, request=None) -> dict | list:
         url = f"{settings.API_URL}/api/{endpoint}"
-        # Limpiar params vacíos
         params = {k: v for k, v in (params or {}).items() if v}
-        response = requests.get(
-            url, params=params,
-            headers=cls._headers(request),
-            timeout=30,
-        )
-        response.raise_for_status()
-        return response.json()
-
-    @classmethod
-    def post(cls, endpoint: str, data: dict = None,
-             request=None) -> dict:
-        url = f"{settings.API_URL}/api/{endpoint}"
-        response = requests.post(
-            url, json=data or {},
+        response = cls._session.get(
+            url,
+            params=params,
             headers=cls._headers(request),
             timeout=60,
         )
         response.raise_for_status()
         return response.json()
-    
+
+    @classmethod
+    def post(cls, endpoint: str, data: dict = None, request=None) -> dict:
+        url = f"{settings.API_URL}/api/{endpoint}"
+        response = cls._session.post(
+            url,
+            json=data or {},
+            headers=cls._headers(request),
+            timeout=60,
+        )
+        response.raise_for_status()
+        return response.json()
+
     @classmethod
     def put(cls, endpoint: str, data: dict = None, request=None) -> dict:
         url = f"{settings.API_URL}/api/{endpoint}"
-        response = requests.put(
-            url, json=data or {},
+        response = cls._session.put(
+            url,
+            json=data or {},
             headers=cls._headers(request),
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
         return response.json()
@@ -59,10 +68,10 @@ class APIClient:
     @classmethod
     def delete(cls, endpoint: str, request=None) -> dict:
         url = f"{settings.API_URL}/api/{endpoint}"
-        response = requests.delete(
+        response = cls._session.delete(
             url,
             headers=cls._headers(request),
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
         return response.json()

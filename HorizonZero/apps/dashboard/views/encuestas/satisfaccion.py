@@ -1,7 +1,8 @@
 # apps/dashboard/views/encuestas/satisfaccion.py
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from datetime import datetime
+from datetime import datetime, timedelta
+import time
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -76,6 +77,8 @@ def encuesta_satisfaccion_kpis(request):
 @login_required
 @permiso_requerido("dashboard.view_encuesta_satisfaccion")
 def encuesta_satisfaccion(request):
+    inicio_total = time.time()
+
     filtros = {
         "agente":        request.GET.get("agente"),
         "sucursal":      request.GET.get("sucursal"),
@@ -87,37 +90,51 @@ def encuesta_satisfaccion(request):
         "fecha_fin":     request.GET.get("fecha_fin"),
         "clasificacion": request.GET.get("clasificacion"),
     }
+
     kpi_sucursales   = request.GET.getlist("kpi_sucursal")
     kpi_fecha_inicio = request.GET.get("kpi_fecha_inicio", "")
     kpi_fecha_fin    = request.GET.get("kpi_fecha_fin", "")
+
     filtros, unidad_forzada, sucursal_forzada = aplicar_restricciones_perfil(request, filtros)
-    print(">>> FILTROS DESPUÉS DE PERFIL:", filtros)
-    print(">>> UNIDAD FORZADA:", unidad_forzada)
-    print(">>> PERFIL USUARIO:", getattr(request.user, 'perfil', None))
-    datos, opciones_sucursal = [], []
-    timeline_data, heatmap_anios, heatmap_json = [], [], "{}"
+
+    if not filtros.get("fecha_inicio") and not filtros.get("fecha_fin"):
+        filtros["fecha_inicio"] = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+        filtros["fecha_fin"] = datetime.now().strftime("%Y-%m-%d")
+
+    datos = []
+    opciones_sucursal = []
+    opciones_unidad = []
+    timeline_data = []
+    heatmap_anios = []
+    heatmap_json = "{}"
 
     try:
         datos = ReporteEncuestaSatisfaccion.obtener_datos_agrupados(filtros)
+
         opciones_sucursal = ReportesDBService.ejecutar_query(
             "SELECT DISTINCT Sucursal FROM dbo.vw_reporte_encuestas_satisfaccion "
             "WHERE Sucursal IS NOT NULL ORDER BY Sucursal"
         )
+
         opciones_unidad = ReportesDBService.ejecutar_query(
-        "SELECT DISTINCT Unidad FROM dbo.vw_reporte_encuestas_satisfaccion "
-        "WHERE Unidad IS NOT NULL ORDER BY Unidad"
-    )
+            "SELECT DISTINCT Unidad FROM dbo.vw_reporte_encuestas_satisfaccion "
+            "WHERE Unidad IS NOT NULL ORDER BY Unidad"
+        )
+
         raw_timeline = ReporteEncuestaSatisfaccion.obtener_timeline()
         timeline_data, heatmap_anios, heatmap_json = build_timeline_heatmap(raw_timeline)
+
     except Exception as e:
-        print(">>> ERROR:", e)
         messages.error(request, "Error al obtener los datos.")
 
     table = EncuestaSatisfaccionTable(datos)
+    
+
     try:
         table.paginate(page=request.GET.get("page", 1), per_page=10)
     except Exception:
         table.paginate(page=1, per_page=10)
+
 
     return render(request, "dashboard/encuestas/satisfaccion.html", {
         "table":             table,
@@ -130,8 +147,8 @@ def encuesta_satisfaccion(request):
         "timeline_data":     timeline_data,
         "heatmap_anios":     heatmap_anios,
         "heatmap_json":      heatmap_json,
-        "unidad_forzada":   unidad_forzada,
-        "sucursal_forzada": sucursal_forzada,
+        "unidad_forzada":    unidad_forzada,
+        "sucursal_forzada":  sucursal_forzada,
     })
 
 
@@ -209,7 +226,8 @@ def encuesta_satisfaccion_exportar(request):
         "fecha_fin":     request.GET.get("fecha_fin"),
         "clasificacion": request.GET.get("clasificacion"),
     }
-    datos = ReporteEncuestaSatisfaccion.obtener_datos(filtros)
+    # ← usar el nuevo método que trae preguntas/respuestas
+    datos = ReporteEncuestaSatisfaccion.obtener_datos_exportar(filtros)
 
     encuestas, preguntas_orden = {}, []
     for fila in datos:
@@ -218,60 +236,79 @@ def encuesta_satisfaccion_exportar(request):
         respuesta = fila.get("Respuesta", "")
 
         if rid not in encuestas:
+            fecha = fila.get("Fecha", "")
+            hora  = fila.get("Hora", "")
             encuestas[rid] = {
-                "respuesta_id": rid,
-                "Fecha":    fila.get("Fecha", ""),
-                "Hora":     fila.get("Hora", ""),
-                "Agente":   fila.get("Agente", ""),
-                "Unidad":   fila.get("Unidad", ""),
-                "Sucursal": fila.get("Sucursal", ""),
-                "Gestion":  fila.get("Gestion", ""),
-                "Nombre":   fila.get("Nombre", ""),
-                "Cedula":   fila.get("Cedula", ""),
+                "respuesta_id":   rid,
+                "Fecha":          str(fecha) if fecha else "",
+                "Agente":         fila.get("Agente",   ""),
+                "Unidad":         fila.get("Unidad",   ""),
+                "Sucursal":       fila.get("Sucursal", ""),
+                "Gestion":        fila.get("Gestion",  ""),
+                "Nombre":         fila.get("Nombre",   ""),
+                "Cedula":         fila.get("Cedula",   ""),
+                "clasificacion":  fila.get("clasificacion", ""),
+                "promedio":       fila.get("promedio_encuesta", ""),
             }
         if pregunta and pregunta not in preguntas_orden:
             preguntas_orden.append(pregunta)
+
+        # Normalizar respuesta de recomendación
+        if pregunta and "recomienda" in pregunta.lower():
+            if str(respuesta).strip() == "1":   respuesta = "Sí"
+            elif str(respuesta).strip() in ["0", "2"]: respuesta = "No"
+
         encuestas[rid][pregunta] = respuesta
 
+    # ── Construir Excel ──────────────────────────────────────────
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Encuesta Satisfacción"
 
-    cols_fijas = ["ID", "Fecha", "Agente", "Unidad", "Sucursal", "Gestión", "Accionista", "Cédula"]
-    keys_fijas = ["respuesta_id", "Fecha", "Agente", "Unidad", "Sucursal", "Gestion", "Nombre", "Cedula"]
+    cols_fijas = ["ID", "Fecha", "Agente", "Unidad", "Sucursal",
+                  "Gestión", "Accionista", "Cédula", "Clasificación", "Promedio"]
+    keys_fijas = ["respuesta_id", "Fecha", "Agente", "Unidad", "Sucursal",
+                  "Gestion", "Nombre", "Cedula", "clasificacion", "promedio"]
 
-    hf = PatternFill("solid", fgColor="003FB7")
-    hfont = Font(bold=True, color="FFFFFF")
+    hf    = PatternFill("solid", fgColor="003FB7")
+    hfont = Font(bold=True, color="FFFFFF", name="Arial")
+    hfont_preg = Font(bold=True, color="1A1000", name="Arial")
+
+    # Cabeceras fijas
     for col_idx, col_name in enumerate(cols_fijas, 1):
         c = ws.cell(row=1, column=col_idx, value=col_name)
         c.fill = hf; c.font = hfont
-        c.alignment = Alignment(horizontal="center")
+        c.alignment = Alignment(horizontal="center", vertical="center")
 
+    # Cabeceras de preguntas
     for i, pregunta in enumerate(preguntas_orden, len(cols_fijas) + 1):
         c = ws.cell(row=1, column=i, value=pregunta)
         c.fill = PatternFill("solid", fgColor="FFC900")
-        c.font = Font(bold=True, color="1A1000")
-        c.alignment = Alignment(horizontal="center", wrap_text=True)
+        c.font = hfont_preg
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
+    # Datos
     for row_idx, (rid, enc) in enumerate(encuestas.items(), 2):
         for col_idx, key in enumerate(keys_fijas, 1):
             valor = enc.get(key, "")
             ws.cell(row=row_idx, column=col_idx, value=str(valor) if valor else "")
         for i, pregunta in enumerate(preguntas_orden, len(cols_fijas) + 1):
-            respuesta = enc.get(pregunta, "")
-            if "recomienda" in pregunta.lower():
-                if str(respuesta).strip() == "1":
-                    respuesta = "Sí"
-                elif str(respuesta).strip() in ["0", "2"]:
-                    respuesta = "No"
-            ws.cell(row=row_idx, column=i, value=str(respuesta) if respuesta else "")
+            ws.cell(row=row_idx, column=i, value=enc.get(pregunta, ""))
+        if row_idx % 2 == 0:
+            ff = PatternFill("solid", fgColor="E8EFFE")
+            for c in range(1, len(cols_fijas) + len(preguntas_orden) + 1):
+                ws.cell(row=row_idx, column=c).fill = ff
 
+    # Anchos de columna
     for col in ws.columns:
         max_len = max((len(str(cell.value or "")) for cell in col), default=10)
-        ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 60)
+        ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 50)
     ws.row_dimensions[1].height = 60
+    ws.freeze_panes = "A2"
 
-    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
     response["Content-Disposition"] = 'attachment; filename="encuesta_satisfaccion.xlsx"'
     wb.save(response)
     return response
