@@ -60,7 +60,7 @@
             {% endif %}
 
 
-            <form method="POST" action="{% url 'usuarios:login' %}" class="space-y-6">
+            <form id="loginForm" method="POST" action="{% url 'usuarios:login' %}" class="space-y-6"  >
                 {% csrf_token %}
 
                 <div>
@@ -90,9 +90,39 @@
 
           
 
-                <button class="w-full bg-primary hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all active:scale-[0.98] flex items-center justify-center space-x-2" type="submit">
-                    <span>Ingresar</span>
-                    <span class="material-icons text-sm">arrow_forward</span>
+                <button
+                    id="loginButton"
+                    class="w-full bg-primary hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all active:scale-[0.98] flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                    type="submit"
+                >
+                    <svg
+                        id="loginSpinner"
+                        class="hidden animate-spin h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                    >
+                        <circle
+                            class="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4"
+                        ></circle>
+
+                        <path
+                            class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        ></path>
+                    </svg>
+
+                    <span id="loginButtonText">Ingresar</span>
+
+                    <span id="loginArrow" class="material-icons text-sm">
+                        arrow_forward
+                    </span>
                 </button>
             </form>
 
@@ -135,6 +165,21 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     renderCounter();
+});
+
+document.getElementById("loginForm").addEventListener("submit", function () {
+
+    const button = document.getElementById("loginButton");
+    const spinner = document.getElementById("loginSpinner");
+    const text = document.getElementById("loginButtonText");
+    const arrow = document.getElementById("loginArrow");
+
+    button.disabled = true;
+
+    spinner.classList.remove("hidden");
+    arrow.classList.add("hidden");
+
+    text.textContent = "Ingresando...";
 });
 </script>
 

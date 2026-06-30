@@ -25,16 +25,17 @@ def _post_audit(data: dict) -> None:
     try:
         api_url  = settings.API_URL
         key      = settings.API_INTERNAL_KEY
-        print(f">>> AUDIT POST: {data.get('accion')} | URL: {api_url} | KEY: {repr(key)}")
+        print(f">>> AUDIT POST: {data.get('accion')} | URL: {api_url}")
         response = requests.post(
             f"{api_url}/api/logs/crear/",
             json=data,
             headers={
-                "X-API-Key": key,
+                "X-Internal-Key": key,
                 "Connection": "close",
                 "Accept": "application/json",
+                "Connection": "close",
             },
-            timeout=10,
+            timeout=2,
             proxies={"http": None, "https": None},
             )
         print(f">>> AUDIT RESPONSE: {response.status_code} | {response.text}")

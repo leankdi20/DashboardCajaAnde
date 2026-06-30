@@ -6,6 +6,8 @@ from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.cache import never_cache
 
+import time
+
 from .forms import LoginForm
 from apps.core.audit import _post_audit
 from apps.usuarios.services.login_attempts import (
@@ -51,11 +53,14 @@ def login_view(request):
     # Llamar a la API en lugar de authenticate()
     try:
         api_url  = settings.API_URL
+        inicio = time.time()
         response = http_requests.post(
             f"{api_url}/api/auth/login/",
             json={"username": username, "password": password},
             timeout=15,
         )
+        print(" LOGIN API LDAP TARDA ESTO: ", round(time.time() - inicio, 2) )
+
     except http_requests.exceptions.ConnectionError:
         messages.error(request, "No se pudo conectar con el servidor de autenticación.")
         return render(request, "login/login.html", {"form": form})
@@ -67,6 +72,7 @@ def login_view(request):
         register_failed_attempt(username, request)
         # Audit login fallido
         try:
+            inicio_audit = time.time()
             _post_audit({
                 "username":    username,
                 "accion":      "LOGIN_FAIL",
@@ -78,6 +84,7 @@ def login_view(request):
                 "url":         request.path,
                 "metodo_http": request.method,
             })
+            print(">>> AUDIT LOGIN_OK tardó:", round(time.time() - inicio_audit, 2))
         except Exception as e:
             logger.warning(f"[LOGIN] No se pudo registrar audit fallido: {e}")
         messages.error(request, "Usuario no autorizado o credenciales incorrectas.")

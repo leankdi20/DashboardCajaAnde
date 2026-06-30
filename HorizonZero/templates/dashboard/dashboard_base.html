@@ -416,6 +416,31 @@ if (avatarBtn && tooltip) {
         function showSpinner() { document.getElementById('global-spinner').classList.remove('hidden'); }
         function hideSpinner() { document.getElementById('global-spinner').classList.add('hidden'); }
     </script>
+
+    <script>
+        // Mostrar spinner al hacer clic en enlaces de navegación del menú
+        document.addEventListener('DOMContentLoaded', function () {
+            // Seleccionar todos los enlaces <a> dentro del sidebar que navegan a una página
+            var enlacesMenu = document.querySelectorAll('aside a[href]');
+
+            enlacesMenu.forEach(function (enlace) {
+                enlace.addEventListener('click', function (e) {
+                    var href = enlace.getAttribute('href');
+
+                    // No mostrar spinner si:
+                    // - es un ancla (#), un enlace vacío, o javascript:
+                    // - abre en nueva pestaña (target="_blank")
+                    if (!href || href === '#' || href.startsWith('javascript:') ||
+                        enlace.target === '_blank') {
+                        return;
+                    }
+
+                    // Mostrar el spinner — la navegación lo "limpia" al cargar la nueva página
+                    showSpinner();
+                });
+            });
+        });
+        </script>
     {% block scripts %}{% endblock scripts %}
 </body>
 </html>
