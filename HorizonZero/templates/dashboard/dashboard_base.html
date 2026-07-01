@@ -414,6 +414,27 @@ if (avatarBtn && tooltip) {
             </p>
         </div>
     </div>
+
+    <div id="idle-session-panel" class="hidden fixed bottom-6 right-6 z-[9998] w-[320px] rounded-2xl border border-amber-200 bg-white/95 shadow-xl backdrop-blur-sm">
+        <div class="p-4 flex flex-col gap-3">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-[20px]">timer</span>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-xs font-bold text-amber-600 uppercase tracking-wider">Sesión inactiva</p>
+                    <p class="text-sm text-slate-600">Si no detectamos actividad, la sesión se cerrará automáticamente.</p>
+                </div>
+            </div>
+            <div class="flex items-center justify-between rounded-xl bg-amber-50 px-3 py-2">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Tiempo restante</span>
+                <span id="idle-session-countdown" class="text-lg font-black text-amber-700">05:00</span>
+            </div>
+            <button id="idle-session-keepalive" type="button" class="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 transition-colors">
+                Continuar sesión
+            </button>
+        </div>
+    </div>
     
     <script>
         function showSpinner(message, submessage) {
@@ -432,6 +453,108 @@ if (avatarBtn && tooltip) {
             spinner.classList.remove('hidden');
         }
         function hideSpinner() { document.getElementById('global-spinner').classList.add('hidden'); }
+    </script>
+
+    <script>
+        (function () {
+            var IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+            var IDLE_PANEL_DELAY_MS = 1000;
+            var LAST_ACTIVITY_KEY = 'hz:last-activity-ts';
+            var LOGOUT_SYNC_KEY = 'hz:forced-logout-ts';
+            var logoutUrl = "{% url 'usuarios:logout' %}";
+            var panel = document.getElementById('idle-session-panel');
+            var countdown = document.getElementById('idle-session-countdown');
+            var keepAliveButton = document.getElementById('idle-session-keepalive');
+            var logoutInProgress = false;
+            var lastWriteTs = 0;
+
+            function nowTs() {
+                return Date.now();
+            }
+
+            function formatRemaining(ms) {
+                var totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+                var minutes = Math.floor(totalSeconds / 60);
+                var seconds = totalSeconds % 60;
+                return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+            }
+
+            function readLastActivity() {
+                var stored = Number(localStorage.getItem(LAST_ACTIVITY_KEY) || '0');
+                return stored > 0 ? stored : nowTs();
+            }
+
+            function markActivity(forceWrite) {
+                if (logoutInProgress) return;
+                var ts = nowTs();
+                if (forceWrite || ts - lastWriteTs >= 1000) {
+                    localStorage.setItem(LAST_ACTIVITY_KEY, String(ts));
+                    lastWriteTs = ts;
+                }
+                if (panel) panel.classList.add('hidden');
+            }
+
+            function forceLogout() {
+                if (logoutInProgress) return;
+                logoutInProgress = true;
+                try {
+                    localStorage.setItem(LOGOUT_SYNC_KEY, String(nowTs()));
+                } catch (error) {}
+                showSpinner('Cerrando sesión...', 'Tu sesión se cerró por 5 minutos de inactividad.');
+                window.location.href = logoutUrl;
+            }
+
+            function syncFromStorage(event) {
+                if (event.key === LOGOUT_SYNC_KEY && event.newValue) {
+                    forceLogout();
+                    return;
+                }
+                if (event.key === LAST_ACTIVITY_KEY && panel) {
+                    panel.classList.add('hidden');
+                }
+            }
+
+            function tickIdleCounter() {
+                if (logoutInProgress) return;
+                var idleMs = nowTs() - readLastActivity();
+                var remainingMs = IDLE_TIMEOUT_MS - idleMs;
+
+                if (remainingMs <= 0) {
+                    forceLogout();
+                    return;
+                }
+
+                if (panel && countdown) {
+                    countdown.textContent = formatRemaining(remainingMs);
+                    if (idleMs >= IDLE_PANEL_DELAY_MS) {
+                        panel.classList.remove('hidden');
+                    } else {
+                        panel.classList.add('hidden');
+                    }
+                }
+            }
+
+            ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'].forEach(function (eventName) {
+                window.addEventListener(eventName, function () {
+                    markActivity(false);
+                }, { passive: true });
+            });
+
+            window.addEventListener('focus', function () {
+                markActivity(true);
+            });
+
+            window.addEventListener('storage', syncFromStorage);
+
+            if (keepAliveButton) {
+                keepAliveButton.addEventListener('click', function () {
+                    markActivity(true);
+                });
+            }
+
+            markActivity(true);
+            window.setInterval(tickIdleCounter, 1000);
+        })();
     </script>
 
     <script>

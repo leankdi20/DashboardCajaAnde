@@ -293,13 +293,13 @@
       </p>
       <div class="flex items-center gap-1">
         {% if page > 1 %}
-        <a href="?page={{ page|add:"-1" }}&{{ request.GET.urlencode }}"
+        <a href="?page={{ page|add:"-1" }}{% if querystring_without_page %}&{{ querystring_without_page }}{% endif %}"
            class="px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Anterior</a>
         {% endif %}
         <span class="px-3 py-1.5 text-sm bg-primary text-white rounded-lg font-medium">{{ page }}</span>
         <span class="text-xs text-slate-400">de {{ total_pages }}</span>
         {% if page < total_pages %}
-        <a href="?page={{ page|add:"1" }}&{{ request.GET.urlencode }}"
+        <a href="?page={{ page|add:"1" }}{% if querystring_without_page %}&{{ querystring_without_page }}{% endif %}"
            class="px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Siguiente</a>
         {% endif %}
       </div>

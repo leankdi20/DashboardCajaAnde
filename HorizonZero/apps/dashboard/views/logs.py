@@ -37,6 +37,8 @@ def _get_filtros(request) -> dict:
 def logs_home(request):
     filtros = _get_filtros(request)
     page    = request.GET.get("page", 1)
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
 
     try:
         kpis       = APIClient.get("logs/kpis/",       params=filtros, request=request)
@@ -52,6 +54,7 @@ def logs_home(request):
         "page":               int(page),
         "total_pages":        logs_data.get("pages", 1),
         "total_count":        logs_data.get("count", 0),
+        "querystring_without_page": query_params.urlencode(),
         "filtro_usuario":     filtros["usuario"],
         "filtro_accion":      filtros["accion"],
         "filtro_modulo":      filtros["modulo"],
