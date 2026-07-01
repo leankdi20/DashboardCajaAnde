@@ -403,21 +403,106 @@ if (avatarBtn && tooltip) {
 
     <!-- Spinner global -->
     <div id="global-spinner" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-white/40 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-xl p-6 flex flex-col items-center gap-3">
+        <div class="bg-white rounded-2xl shadow-xl p-6 min-w-[280px] flex flex-col items-center gap-3">
             <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
             </svg>
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Cargando...</p>
+            <p id="global-spinner-message" class="text-xs font-bold text-slate-500 uppercase tracking-wider">Cargando...</p>
+            <p id="global-spinner-submessage" class="hidden text-[11px] text-slate-400 text-center">
+                Estamos procesando la descarga. Esto puede tardar unos segundos.
+            </p>
         </div>
     </div>
     
     <script>
-        function showSpinner() { document.getElementById('global-spinner').classList.remove('hidden'); }
+        function showSpinner(message, submessage) {
+            var spinner = document.getElementById('global-spinner');
+            var messageEl = document.getElementById('global-spinner-message');
+            var submessageEl = document.getElementById('global-spinner-submessage');
+            if (messageEl) messageEl.textContent = message || 'Cargando...';
+            if (submessageEl) {
+                if (submessage) {
+                    submessageEl.textContent = submessage;
+                    submessageEl.classList.remove('hidden');
+                } else {
+                    submessageEl.classList.add('hidden');
+                }
+            }
+            spinner.classList.remove('hidden');
+        }
         function hideSpinner() { document.getElementById('global-spinner').classList.add('hidden'); }
     </script>
 
     <script>
+        function getDownloadFilename(response, fallbackName) {
+            var header = response.headers.get('Content-Disposition') || '';
+            var utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+            if (utf8Match && utf8Match[1]) {
+                return decodeURIComponent(utf8Match[1]);
+            }
+
+            var asciiMatch = header.match(/filename="?([^"]+)"?/i);
+            if (asciiMatch && asciiMatch[1]) {
+                return asciiMatch[1];
+            }
+
+            return fallbackName || 'reporte.xlsx';
+        }
+
+        async function startExportDownload(url) {
+            showSpinner('Generando Excel...', 'Estamos preparando la descarga. Si el archivo es grande, puede tardar un poco.');
+
+            try {
+                var response = await fetch(url, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    var errorMessage = 'No se pudo generar el archivo (' + response.status + ').';
+                    try {
+                        var errorData = await response.clone().json();
+                        if (errorData && errorData.error) {
+                            errorMessage = errorData.error;
+                        }
+                    } catch (jsonError) {
+                        try {
+                            var errorText = await response.text();
+                            if (errorText) {
+                                errorMessage = errorText;
+                            }
+                        } catch (textError) {}
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                var blob = await response.blob();
+                var fallbackName = (url.split('/').pop() || 'reporte.xlsx').split('?')[0] || 'reporte.xlsx';
+                var filename = getDownloadFilename(response, fallbackName);
+                var downloadUrl = window.URL.createObjectURL(blob);
+                var tempLink = document.createElement('a');
+
+                tempLink.href = downloadUrl;
+                tempLink.download = filename;
+                document.body.appendChild(tempLink);
+                tempLink.click();
+                tempLink.remove();
+
+                window.setTimeout(function () {
+                    window.URL.revokeObjectURL(downloadUrl);
+                }, 1000);
+            } catch (error) {
+                console.error('Error exportando archivo:', error);
+                alert(error.message || 'Ocurrió un error al exportar el archivo.');
+            } finally {
+                hideSpinner();
+            }
+        }
+
         // Mostrar spinner al hacer clic en enlaces de navegación del menú
         document.addEventListener('DOMContentLoaded', function () {
             // Seleccionar todos los enlaces <a> dentro del sidebar que navegan a una página
@@ -436,7 +521,22 @@ if (avatarBtn && tooltip) {
                     }
 
                     // Mostrar el spinner — la navegación lo "limpia" al cargar la nueva página
-                    showSpinner();
+                    showSpinner('Cargando...');
+                });
+            });
+
+            var exportLinks = Array.from(document.querySelectorAll('a[href]')).filter(function (link) {
+                return (link.textContent || '').replace(/\s+/g, ' ').trim().includes('Exportar Excel');
+            });
+
+            exportLinks.forEach(function (link) {
+                if (link.target === '_blank' || link.hasAttribute('download')) return;
+                link.setAttribute('data-export-excel', 'true');
+                link.addEventListener('click', function (event) {
+                    var href = link.getAttribute('href');
+                    if (!href || href === '#') return;
+                    event.preventDefault();
+                    startExportDownload(href);
                 });
             });
         });

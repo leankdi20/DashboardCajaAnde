@@ -1,5 +1,6 @@
 # apps/dashboard/services/api_client.py
 import requests
+from requests.adapters import HTTPAdapter
 from django.conf import settings
 
 
@@ -11,8 +12,9 @@ class APIClient:
 
     _session = requests.Session()
     _session.trust_env = False
+    _session.mount("http://", HTTPAdapter(pool_connections=50, pool_maxsize=50, max_retries=0))
+    _session.mount("https://", HTTPAdapter(pool_connections=50, pool_maxsize=50, max_retries=0))
     _session.headers.update({
-        "Connection": "close",
         "Accept": "application/json",
     })
 
@@ -24,13 +26,13 @@ class APIClient:
         return {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
-            "Connection": "close",
             "Accept": "application/json",
         }
 
     @classmethod
-    def get(cls, endpoint: str, params: dict = None, request=None) -> dict | list:
-        url = f"{settings.API_URL}/api/{endpoint}"
+    def get(cls, endpoint: str, params: dict = None, request=None, base_url: str = None) -> dict | list:
+        root = (base_url or settings.API_URL).rstrip("/")
+        url = f"{root}/api/{endpoint.lstrip('/')}"
         params = {k: v for k, v in (params or {}).items() if v}
         response = cls._session.get(
             url,
@@ -42,8 +44,9 @@ class APIClient:
         return response.json()
 
     @classmethod
-    def post(cls, endpoint: str, data: dict = None, request=None) -> dict:
-        url = f"{settings.API_URL}/api/{endpoint}"
+    def post(cls, endpoint: str, data: dict = None, request=None, base_url: str = None) -> dict:
+        root = (base_url or settings.API_URL).rstrip("/")
+        url = f"{root}/api/{endpoint.lstrip('/')}"
         response = cls._session.post(
             url,
             json=data or {},
@@ -54,8 +57,9 @@ class APIClient:
         return response.json()
 
     @classmethod
-    def put(cls, endpoint: str, data: dict = None, request=None) -> dict:
-        url = f"{settings.API_URL}/api/{endpoint}"
+    def put(cls, endpoint: str, data: dict = None, request=None, base_url: str = None) -> dict:
+        root = (base_url or settings.API_URL).rstrip("/")
+        url = f"{root}/api/{endpoint.lstrip('/')}"
         response = cls._session.put(
             url,
             json=data or {},
@@ -66,8 +70,9 @@ class APIClient:
         return response.json()
 
     @classmethod
-    def delete(cls, endpoint: str, request=None) -> dict:
-        url = f"{settings.API_URL}/api/{endpoint}"
+    def delete(cls, endpoint: str, request=None, base_url: str = None) -> dict:
+        root = (base_url or settings.API_URL).rstrip("/")
+        url = f"{root}/api/{endpoint.lstrip('/')}"
         response = cls._session.delete(
             url,
             headers=cls._headers(request),

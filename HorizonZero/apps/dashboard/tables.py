@@ -14,8 +14,11 @@ class EncuestaSatisfaccionTable(tables.Table):
     acciones   = tables.Column(empty_values=(), orderable=False, verbose_name="Acciones")
 
     def render_acciones(self, record):
+        respuesta_id = record.get("respuesta_id")
+        if not respuesta_id:
+            return ""
         return mark_safe(
-            f'<a href="/dashboard/encuestas/satisfaccion/{record["respuesta_id"]}/" '
+            f'<a href="/dashboard/encuestas/satisfaccion/{respuesta_id}/" '
             f'class="text-primary hover:text-primary-dark transition-colors">'
             f'<span class="material-symbols-outlined">visibility</span>'
             f'</a>'
