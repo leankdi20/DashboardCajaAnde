@@ -16,7 +16,7 @@ from apps.dashboard.services.api_client import APIClient
 DEV_API_URL = getattr(
     settings,
     "ENCUESTAS_SATISFACCION_API_URL",
-    "http://172.16.21.204:9080",
+    getattr(settings, "API_URL", ""),
 )
 
 LIST_LIMIT = None
