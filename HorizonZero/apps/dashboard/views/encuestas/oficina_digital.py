@@ -9,8 +9,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 
 from apps.core.decorators import permiso_requerido
-from apps.dashboard.reports import encuesta_oficina_digital
-from apps.dashboard.services.db_service import ReportesDBService
+from apps.dashboard.services.encuesta_oficina_digital_api import EncuestaOficinaDigitalAPIService
 from apps.dashboard.tables import EncuestaOficinaDigitalTable
 from apps.dashboard.views._base import build_timeline_heatmap
 
@@ -18,28 +17,8 @@ from apps.dashboard.views._base import build_timeline_heatmap
 
 @login_required
 def encuesta_oficina_digital_buscar(request, campo):
-    CAMPOS = {
-        "agente": "Agente",
-        "nombre": "Nombre",
-    }
-    if campo not in CAMPOS:
-        return JsonResponse({"results": []})
-
-    col_db = CAMPOS[campo]
-    term   = request.GET.get("term", "").strip()
-
-    sql = f"""
-        SELECT DISTINCT TOP 30 {col_db}
-        FROM dbo.vw_reporte_encuestas_satisfaccion_oficina_digital
-        WHERE {col_db} IS NOT NULL
-        AND UPPER({col_db}) LIKE UPPER(%s)
-        ORDER BY {col_db}
-    """
-    filas = ReportesDBService.ejecutar_query(sql, [f"%{term}%"])
-    data  = [
-        {"id": (r[col_db] or "").strip(), "text": (r[col_db] or "").strip()}
-        for r in filas if r.get(col_db)
-    ]
+    term = request.GET.get("term", "").strip()
+    data = EncuestaOficinaDigitalAPIService.buscar_valores(campo, term, request=request)
     return JsonResponse({"results": data, "pagination": {"more": False}})
 
 
@@ -49,7 +28,8 @@ def encuesta_oficina_digital_kpis(request):
     kpi_fecha_inicio = request.GET.get("kpi_fecha_inicio")
     kpi_fecha_fin    = request.GET.get("kpi_fecha_fin")
  
-    kpis = encuesta_oficina_digital.ReporteEncuestaOficinaDigital.obtener_kpis_globales(
+    kpis = EncuestaOficinaDigitalAPIService.obtener_kpis_globales(
+        request=request,
         fecha_inicio=kpi_fecha_inicio or None,
         fecha_fin=kpi_fecha_fin or None,
     )
@@ -76,12 +56,13 @@ def encuesta_satisfaccion_oficina(request):
     timeline_data, heatmap_anios, heatmap_json = [], [], "{}"
 
     try:
-        datos         = encuesta_oficina_digital.ReporteEncuestaOficinaDigital.obtener_datos_agrupados(filtros)
-        kpis_globales = encuesta_oficina_digital.ReporteEncuestaOficinaDigital.obtener_kpis_globales(
+        datos = EncuestaOficinaDigitalAPIService.obtener_listado(filtros, request=request)
+        kpis_globales = EncuestaOficinaDigitalAPIService.obtener_kpis_globales(
+            request=request,
             fecha_inicio=kpi_fecha_inicio,
             fecha_fin=kpi_fecha_fin,
         )
-        raw_timeline = encuesta_oficina_digital.ReporteEncuestaOficinaDigital.obtener_timeline()
+        raw_timeline = EncuestaOficinaDigitalAPIService.obtener_timeline(request=request, filtros=filtros)
         timeline_data, heatmap_anios, heatmap_json = build_timeline_heatmap(raw_timeline)
     except Exception as e:
         print(">>> ERROR:", e)
@@ -110,26 +91,30 @@ def encuesta_satisfaccion_oficina(request):
 @permiso_requerido("dashboard.view_encuesta_satisfaccion_oficina_digital")
 def encuesta_satisfaccion_detalle_of_dig(request, respuesta_id):
     try:
-        filas = encuesta_oficina_digital.ReporteEncuestaOficinaDigital.obtener_detalle(respuesta_id)
+        detalle = EncuestaOficinaDigitalAPIService.obtener_detalle(respuesta_id, request=request)
     except Exception:
-        filas = []
+        detalle = {}
         messages.error(request, "Error al obtener el detalle.")
 
-    encabezado = filas[0] if filas else {}
+    encabezado = detalle.get("encabezado", {})
+    filas = detalle.get("preguntas", [])
 
     respuestas_numericas = []
     for fila in filas:
-        try:
-            respuestas_numericas.append(float(fila.get("Respuesta", 0)))
-        except (ValueError, TypeError):
-            pass
+        respuesta = (fila.get("Respuesta") or "").strip()
+        valor = {"Excelente": 3, "Regular": 2, "Malo": 1}.get(respuesta)
+        if valor is not None:
+            respuestas_numericas.append(valor)
 
-    satisfechos      = sum(1 for r in respuestas_numericas if r >= 4)
+    satisfechos = sum(1 for r in respuestas_numericas if r == 3)
     satisfaccion_pct = round((satisfechos / len(respuestas_numericas) * 100)) if respuestas_numericas else 0
 
-    stats_agente      = encuesta_oficina_digital.ReporteEncuestaOficinaDigital.obtener_promedio_agente(encabezado.get("Agente", ""))
-    promedio_encuesta = encuesta_oficina_digital.ReporteEncuestaOficinaDigital.obtener_promedio_encuesta(respuesta_id)
-    promedio_agente_pct   = round((stats_agente["promedio_agente"]  / 3) * 100) if stats_agente["promedio_agente"]  else 0
+    stats_agente = EncuestaOficinaDigitalAPIService.obtener_promedio_agente(
+        encabezado.get("Agente", ""),
+        request=request,
+    )
+    promedio_encuesta = detalle.get("promedio_encuesta", 0)
+    promedio_agente_pct = round((stats_agente["promedio_agente"] / 3) * 100) if stats_agente["promedio_agente"] else 0
     promedio_encuesta_pct = round((promedio_encuesta / 3) * 100) if promedio_encuesta else 0
 
     respuesta_satisfaccion = ""
@@ -163,8 +148,9 @@ def encuesta_satisfaccion_of_dig_exportar(request):
         "cedula":       request.GET.get("cedula"),
         "fecha_inicio": request.GET.get("fecha_inicio"),
         "fecha_fin":    request.GET.get("fecha_fin"),
+        "clasificacion": request.GET.get("clasificacion"),
     }
-    datos = encuesta_oficina_digital.ReporteEncuestaOficinaDigital.obtener_datos(filtros)
+    datos = EncuestaOficinaDigitalAPIService.obtener_detalles_para_exportar(filtros, request=request)
 
     encuestas, preguntas_orden = {}, []
     for fila in datos:
@@ -225,16 +211,20 @@ def encuesta_satisfaccion_of_dig_exportar(request):
 def encuesta_satisfaccion_detalle_of_dig_exportar(request, respuesta_id):
     # Mismo layout que satisfaccion_detalle_exportar pero con escala /3
     try:
-        filas = encuesta_oficina_digital.ReporteEncuestaOficinaDigital.obtener_detalle(respuesta_id)
+        detalle = EncuestaOficinaDigitalAPIService.obtener_detalle(respuesta_id, request=request)
     except Exception:
-        filas = []
+        detalle = {}
 
+    filas = detalle.get("preguntas", [])
     if not filas:
         return HttpResponse("Sin datos", status=404)
 
-    encabezado        = filas[0]
-    stats_agente      = encuesta_oficina_digital.ReporteEncuestaOficinaDigital.obtener_promedio_agente(encabezado.get("Agente", ""))
-    promedio_encuesta = encuesta_oficina_digital.ReporteEncuestaOficinaDigital.obtener_promedio_encuesta(respuesta_id)
+    encabezado = detalle.get("encabezado", {})
+    stats_agente = EncuestaOficinaDigitalAPIService.obtener_promedio_agente(
+        encabezado.get("Agente", ""),
+        request=request,
+    )
+    promedio_encuesta = detalle.get("promedio_encuesta", 0)
     promedio_agente_pct   = round((stats_agente["promedio_agente"]  / 3) * 100) if stats_agente["promedio_agente"]  else 0
     promedio_encuesta_pct = round((promedio_encuesta / 3) * 100) if promedio_encuesta else 0
 
