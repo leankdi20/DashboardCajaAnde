@@ -192,15 +192,6 @@ def encuesta_whatsapp_agente_detalle_exportar(request, respuesta_id):
     ws.row_dimensions[4].height = 4
     for col in range(2, 7): ws.cell(row=4, column=col).fill = fill("003FB7")
 
-    for row_n, label, val, fgc, fc in zip(
-        [5,5,5],[6,6,6],
-        zip([4,5,6],[4,5,6]),
-        zip(["PROMEDIO GENERAL AGENTE","ENCUESTAS DEL AGENTE","PROMEDIO ESTA ENCUESTA"],
-            [f"{prom_ag_pct}%", str(stats_agente["total_encuestas"]), f"{prom_enc_pct}%"],
-            ["003FB7","E8EEFF","8B1A0A"],["FFFFFF","003FB7","FFFFFF"])
-    ):
-        pass  # built inline below
-
     for col, label, val, fgc, fc in zip(
         [4,5,6],
         ["PROMEDIO GENERAL AGENTE","ENCUESTAS DEL AGENTE","PROMEDIO ESTA ENCUESTA"],

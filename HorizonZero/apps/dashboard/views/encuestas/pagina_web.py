@@ -1,6 +1,7 @@
 # apps/dashboard/views/encuestas/pagina_web.py
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
+from datetime import datetime
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -12,6 +13,25 @@ from apps.dashboard.reports import encuesta_pagina_web as _rep
 from apps.dashboard.services.db_service import ReportesDBService
 from apps.dashboard.tables import EncuestaPaginaWebTable
 from apps.dashboard.views._base import build_timeline_heatmap
+
+
+def _format_fecha_detalle(value):
+    if not value:
+        return "—"
+    if hasattr(value, "strftime"):
+        return value.strftime("%d/%m/%Y %H:%M")
+    if isinstance(value, str):
+        parsed = None
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f"):
+            try:
+                parsed = datetime.strptime(value, fmt)
+                break
+            except ValueError:
+                continue
+        if parsed:
+            return parsed.strftime("%d/%m/%Y %H:%M")
+        return value
+    return str(value)
 
 
 @login_required
@@ -86,7 +106,7 @@ def encuesta_experiencia_web_detalle(request, respuesta_id):
     encabezado = filas[0] if filas else {}
     encabezado["Nombre"] = encabezado.get("Nombre") or "—"
     fecha = encabezado.get("Fecha")
-    encabezado["Fecha"] = fecha.strftime("%d/%m/%Y %H:%M") if fecha else "—"
+    encabezado["Fecha"] = _format_fecha_detalle(fecha)
 
     promedio_encuesta     = _rep.ReporteEncuestaPaginaWeb.obtener_promedio_encuesta(respuesta_id)
     promedio_encuesta_nps = round((promedio_encuesta / 10) * 100) if promedio_encuesta else 0
