@@ -49,7 +49,7 @@ def logs_home(request):
         messages.error(request, f"Error al obtener los logs: {e}")
         kpis = {}; actividad = []; dist = []; logs_data = {"results": [], "count": 0, "pages": 1}
 
-    return render(request, "dashboard/logs/logs_home.html", {
+    return render(request, "dashboard/Vista_Logs/logs_home.html", {
         "logs":               logs_data.get("results", []),
         "page":               int(page),
         "total_pages":        logs_data.get("pages", 1),
@@ -105,7 +105,7 @@ def log_detalle(request, log_id):
         except Exception:
             return raw
 
-    return render(request, "dashboard/logs/log_detalle.html", {
+    return render(request, "dashboard/Vista_Logs/logs_detalle.html", {
         "log":              log,
         "datos_anteriores": _parse(log.get("datos_anteriores")),
         "datos_nuevos":     _parse(log.get("datos_nuevos")),

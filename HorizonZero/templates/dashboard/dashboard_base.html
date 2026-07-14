@@ -457,11 +457,95 @@ if (avatarBtn && tooltip) {
 
     <script>
         (function () {
-            var IDLE_TIMEOUT_MS = 5 * 60 * 1000;
-            var IDLE_PANEL_DELAY_MS = 1000;
+            var SESSION_STATUS_URL = "{% url 'usuarios:session_status' %}";
+            var LOGOUT_URL = "{% url 'usuarios:logout' %}";
             var LAST_ACTIVITY_KEY = 'hz:last-activity-ts';
             var LOGOUT_SYNC_KEY = 'hz:forced-logout-ts';
-            var logoutUrl = "{% url 'usuarios:logout' %}";
+            var DEFAULT_FORCE_LOGOUT_REASON = 'session_replaced';
+            var DEFAULT_FORCE_LOGOUT_MESSAGE = 'Su sesion fue iniciada en otro navegador o dispositivo.';
+
+            window.HZ_NATIVE_FETCH = window.fetch ? window.fetch.bind(window) : null;
+            window.HZ_LAST_ACTIVITY_KEY = LAST_ACTIVITY_KEY;
+            window.HZ_LOGOUT_SYNC_KEY = LOGOUT_SYNC_KEY;
+            window.__hzForceLogoutInProgress = false;
+
+            function clearClientSessionState() {
+                try {
+                    Object.keys(localStorage).forEach(function (key) {
+                        if (key.indexOf('hz:') === 0) {
+                            localStorage.removeItem(key);
+                        }
+                    });
+                } catch (error) {}
+
+                try {
+                    sessionStorage.clear();
+                } catch (error) {}
+            }
+
+            function buildLogoutUrl(reason) {
+                return LOGOUT_URL + '?forced_logout=' + encodeURIComponent(reason || DEFAULT_FORCE_LOGOUT_REASON);
+            }
+
+            window.forceLogout = function (message, options) {
+                if (window.__hzForceLogoutInProgress) return;
+                window.__hzForceLogoutInProgress = true;
+
+                var finalOptions = options || {};
+                var finalReason = finalOptions.reason || DEFAULT_FORCE_LOGOUT_REASON;
+                var finalMessage = message || DEFAULT_FORCE_LOGOUT_MESSAGE;
+
+                clearClientSessionState();
+                try {
+                    localStorage.setItem(LOGOUT_SYNC_KEY, String(Date.now()));
+                } catch (error) {}
+
+                showSpinner('Cerrando sesion...', finalMessage);
+                window.location.assign(buildLogoutUrl(finalReason));
+            };
+
+            window.handleForcedLogoutResponse = async function (response) {
+                if (!response || response.status < 400) return false;
+
+                var isMarkedForcedLogout = response.headers.get('X-Force-Logout') === '1';
+                var isSessionStatusCheck = response.url && response.url.indexOf(SESSION_STATUS_URL) !== -1;
+                if (!isMarkedForcedLogout && !isSessionStatusCheck) {
+                    return false;
+                }
+
+                var reason = response.headers.get('X-Force-Logout-Reason') || DEFAULT_FORCE_LOGOUT_REASON;
+                var message = DEFAULT_FORCE_LOGOUT_MESSAGE;
+
+                try {
+                    var payload = await response.clone().json();
+                    if (payload && payload.detail) {
+                        message = payload.detail;
+                    }
+                    if (payload && payload.reason) {
+                        reason = payload.reason;
+                    }
+                } catch (error) {}
+
+                window.forceLogout(message, { reason: reason });
+                return true;
+            };
+
+            if (window.HZ_NATIVE_FETCH) {
+                window.fetch = async function (input, init) {
+                    var response = await window.HZ_NATIVE_FETCH(input, init);
+                    await window.handleForcedLogoutResponse(response);
+                    return response;
+                };
+            }
+        })();
+    </script>
+
+    <script>
+        (function () {
+            var IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+            var IDLE_PANEL_DELAY_MS = 1000;
+            var LAST_ACTIVITY_KEY = window.HZ_LAST_ACTIVITY_KEY || 'hz:last-activity-ts';
+            var LOGOUT_SYNC_KEY = window.HZ_LOGOUT_SYNC_KEY || 'hz:forced-logout-ts';
             var panel = document.getElementById('idle-session-panel');
             var countdown = document.getElementById('idle-session-countdown');
             var keepAliveButton = document.getElementById('idle-session-keepalive');
@@ -485,7 +569,7 @@ if (avatarBtn && tooltip) {
             }
 
             function markActivity(forceWrite) {
-                if (logoutInProgress) return;
+                if (window.__hzForceLogoutInProgress || logoutInProgress) return;
                 var ts = nowTs();
                 if (forceWrite || ts - lastWriteTs >= 1000) {
                     localStorage.setItem(LAST_ACTIVITY_KEY, String(ts));
@@ -495,13 +579,12 @@ if (avatarBtn && tooltip) {
             }
 
             function forceLogout() {
-                if (logoutInProgress) return;
+                if (window.__hzForceLogoutInProgress || logoutInProgress) return;
                 logoutInProgress = true;
-                try {
-                    localStorage.setItem(LOGOUT_SYNC_KEY, String(nowTs()));
-                } catch (error) {}
+                window.forceLogout('Tu sesion se cerro por 5 minutos de inactividad.', {
+                    reason: 'session_invalid'
+                });
                 showSpinner('Cerrando sesión...', 'Tu sesión se cerró por 5 minutos de inactividad.');
-                window.location.href = logoutUrl;
             }
 
             function syncFromStorage(event) {
@@ -515,7 +598,7 @@ if (avatarBtn && tooltip) {
             }
 
             function tickIdleCounter() {
-                if (logoutInProgress) return;
+                if (window.__hzForceLogoutInProgress || logoutInProgress) return;
                 var idleMs = nowTs() - readLastActivity();
                 var remainingMs = IDLE_TIMEOUT_MS - idleMs;
 
@@ -554,6 +637,44 @@ if (avatarBtn && tooltip) {
 
             markActivity(true);
             window.setInterval(tickIdleCounter, 1000);
+        })();
+    </script>
+
+    <script>
+        (function () {
+            var SESSION_STATUS_URL = "{% url 'usuarios:session_status' %}";
+            var POLLING_INTERVAL_MS = 60 * 1000;
+
+            async function checkSessionStatus() {
+                if (window.__hzForceLogoutInProgress || !window.HZ_NATIVE_FETCH) return;
+
+                try {
+                    var response = await window.HZ_NATIVE_FETCH(SESSION_STATUS_URL, {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        cache: 'no-store'
+                    });
+
+                    if (response.status === 401 || response.status === 403) {
+                        await window.handleForcedLogoutResponse(response);
+                    }
+                } catch (error) {
+                    console.warn('No se pudo validar el estado de la sesion.', error);
+                }
+            }
+
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') {
+                    checkSessionStatus();
+                }
+            });
+
+            window.addEventListener('focus', checkSessionStatus);
+            window.setInterval(checkSessionStatus, POLLING_INTERVAL_MS);
         })();
     </script>
 

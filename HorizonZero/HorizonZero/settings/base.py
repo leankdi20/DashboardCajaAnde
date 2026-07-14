@@ -68,8 +68,10 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'apps.core.middleware.FriendlyNotFoundMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'apps.usuarios.middleware_jwt.JWTAuthMiddleware', #nuevo
+    'apps.usuarios.middleware.ForcedLogoutMiddleware',
     # 'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',

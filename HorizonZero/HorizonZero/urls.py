@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.static import serve
 from django.http import HttpResponse
+
 urlpatterns = [
     # path('admin/', admin.site.urls),
     path("__test_urls__/", lambda request: HttpResponse("OK URLS")),
@@ -11,6 +12,8 @@ urlpatterns = [
     path("dashboard/", include("apps.dashboard.urls", namespace="dashboard")),
     
 ]
+
+handler404 = "apps.core.views.page_not_found_view"
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=str(settings.BASE_DIR / "static"))

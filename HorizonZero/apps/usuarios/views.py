@@ -3,6 +3,7 @@ import requests as http_requests
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.cache import never_cache
 
@@ -17,6 +18,13 @@ from apps.usuarios.services.login_attempts import (
     is_login_blocked,
     register_failed_attempt,
 )
+from .session_control import (
+    FORCED_LOGOUT_QUERY_PARAM,
+    SESSION_REPLACED_REASON,
+    build_forced_logout_response,
+    build_login_url,
+    get_forced_logout_message,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +38,9 @@ def login_view(request):
     form = LoginForm(request.POST or None)
 
     if request.method == "GET":
+        forced_logout_reason = request.GET.get(FORCED_LOGOUT_QUERY_PARAM)
+        if forced_logout_reason:
+            messages.error(request, get_forced_logout_message(forced_logout_reason))
         return render(request, "login/login.html", {"form": form})
 
     if not form.is_valid():
@@ -159,6 +170,30 @@ def logout_view(request):
             logger.warning(f"[LOGOUT] No se pudo registrar audit: {e}")
 
     logger.info("Usuario cerró sesión.")
-    resp = redirect("usuarios:login")
+    reason = request.GET.get(FORCED_LOGOUT_QUERY_PARAM) or request.GET.get("reason")
+    resp = redirect(build_login_url(reason=reason))
     resp.delete_cookie("hz_token")
     return resp
+
+
+@never_cache
+@require_http_methods(["GET"])
+def session_status_view(request):
+    if getattr(request, "session_invalidated", False):
+        reason = getattr(request, "session_invalid_reason", None) or SESSION_REPLACED_REASON
+        return build_forced_logout_response(
+            request,
+            reason=reason,
+            message=get_forced_logout_message(reason),
+            status=401,
+        )
+
+    if not request.user.is_authenticated:
+        return build_forced_logout_response(
+            request,
+            reason=SESSION_REPLACED_REASON,
+            message="La sesion no esta activa.",
+            status=401,
+        )
+
+    return JsonResponse({"authenticated": True})

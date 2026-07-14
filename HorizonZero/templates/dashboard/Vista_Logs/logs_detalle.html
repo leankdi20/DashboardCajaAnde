@@ -16,7 +16,6 @@
 {% block content %}
 <div class="p-6 max-w-4xl space-y-5">
 
-  {# ── Encabezado ── #}
   <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-wrap items-center gap-4">
 
     <div class="w-12 h-12 rounded-full flex items-center justify-center
@@ -56,7 +55,6 @@
     </a>
   </div>
 
-  {# ── Datos principales ── #}
   <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
     <div class="px-5 py-4 border-b border-slate-100">
       <h3 class="font-semibold text-slate-700 text-sm">Información del evento</h3>
@@ -135,7 +133,6 @@
     </div>
   </div>
 
-  {# ── Diff antes / después (solo si hay datos) ── #}
   {% if datos_anteriores or datos_nuevos %}
   <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
     <div class="px-5 py-4 border-b border-slate-100">

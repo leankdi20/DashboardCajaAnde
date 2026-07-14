@@ -1,0 +1,89 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caja de Ande - Pagina no disponible</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .font-headline { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+    <div class="min-h-screen flex items-center justify-center px-6 py-10">
+        <div class="w-full max-w-5xl overflow-hidden rounded-[32px] bg-white shadow-2xl ring-1 ring-slate-200 lg:grid lg:grid-cols-[1.1fr_0.9fr]">
+            <div class="relative hidden lg:block min-h-[640px]">
+                <img
+                    src="{% static 'img/login/Edificio.jpg' %}"
+                    alt="Caja de Ande"
+                    class="absolute inset-0 h-full w-full object-cover"
+                >
+                <div class="absolute inset-0 bg-gradient-to-tr from-blue-950/70 via-blue-900/30 to-transparent"></div>
+                <div class="absolute top-10 left-10 rounded-2xl border border-white/20 bg-white/10 px-5 py-4 backdrop-blur-md">
+                    <img
+                        src="{% static 'img/dashboard/horizontalLogo.png' %}"
+                        alt="Caja de Ande"
+                        class="h-10 w-auto"
+                    >
+                </div>
+                <div class="absolute bottom-10 left-10 right-10 text-white">
+                    <p class="text-xs font-bold uppercase tracking-[0.28em] text-blue-100/90">Navegacion protegida</p>
+                    <h1 class="font-headline mt-3 text-4xl font-extrabold leading-tight">
+                        La direccion que intenta abrir no esta disponible en este momento.
+                    </h1>
+                    <p class="mt-4 max-w-xl text-sm text-blue-50/90">
+                        Puede volver al inicio del sistema o ingresar desde el modulo correspondiente.
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex min-h-[640px] items-center justify-center px-8 py-12">
+                <div class="w-full max-w-md">
+                    <div class="mb-8">
+                        <span class="inline-flex items-center rounded-full bg-red-50 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.24em] text-red-600">
+                            Error 404
+                        </span>
+                    </div>
+
+                    <div class="mb-8 space-y-4">
+                        <h2 class="font-headline text-4xl font-extrabold tracking-tight text-slate-900">
+                            Pagina no disponible
+                        </h2>
+                        <p class="text-base leading-7 text-slate-500">
+                            No encontramos la URL que intentaste abrir. Es posible que haya cambiado, no exista o no este habilitada para tu usuario.
+                        </p>
+                    </div>
+
+                    <div class="mb-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+                        <p class="text-sm font-semibold text-amber-800">
+                            Si llegaste aqui desde un enlace guardado o una URL escrita manualmente, volve al inicio y navega desde el menu del sistema.
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col gap-3 sm:flex-row">
+                        <a
+                            href="{% url 'dashboard:home' %}"
+                            class="inline-flex items-center justify-center rounded-2xl bg-[#003fb7] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-800"
+                        >
+                            Ir al dashboard
+                        </a>
+                        <a
+                            href="{% url 'usuarios:login' %}"
+                            class="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-6 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                        >
+                            Ir a inicio de sesion
+                        </a>
+                    </div>
+
+                    <p class="mt-10 text-xs text-slate-400">
+                        Si el problema persiste, verifica que la URL corresponda a una opcion habilitada en el sistema.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

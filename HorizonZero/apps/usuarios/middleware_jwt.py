@@ -7,6 +7,8 @@ import requests as http_requests
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 
+from .session_control import SESSION_REPLACED_REASON
+
 logger = logging.getLogger(__name__)
 
 
@@ -75,6 +77,8 @@ class JWTAuthMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        request.session_invalidated = False
+        request.session_invalid_reason = None
         token = request.COOKIES.get(self.COOKIE_NAME)
 
         if token:
@@ -94,6 +98,10 @@ class JWTAuthMiddleware:
                     datos = response.json()
                     request.user     = UsuarioJWT(datos)
                     request.jwt_token = token
+                elif response.status_code in (401, 403):
+                    request.session_invalidated = True
+                    request.session_invalid_reason = SESSION_REPLACED_REASON
+                    request.user = AnonymousUser()
                 else:
                     request.user = AnonymousUser()
             except Exception as e:
