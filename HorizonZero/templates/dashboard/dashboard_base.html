@@ -415,25 +415,20 @@ if (avatarBtn && tooltip) {
         </div>
     </div>
 
-    <div id="idle-session-panel" class="hidden fixed bottom-6 right-6 z-[9998] w-[320px] rounded-2xl border border-amber-200 bg-white/95 shadow-xl backdrop-blur-sm">
-        <div class="p-4 flex flex-col gap-3">
-            <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
-                    <span class="material-symbols-outlined text-[20px]">timer</span>
-                </div>
-                <div class="min-w-0">
-                    <p class="text-xs font-bold text-amber-600 uppercase tracking-wider">Sesión inactiva</p>
-                    <p class="text-sm text-slate-600">Si no detectamos actividad, la sesión se cerrará automáticamente.</p>
-                </div>
-            </div>
-            <div class="flex items-center justify-between rounded-xl bg-amber-50 px-3 py-2">
-                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Tiempo restante</span>
-                <span id="idle-session-countdown" class="text-lg font-black text-amber-700">05:00</span>
-            </div>
-            <button id="idle-session-keepalive" type="button" class="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 transition-colors">
-                Continuar sesión
-            </button>
-        </div>
+    <div
+        id="idle-session-panel"
+        class="hidden fixed top-1 right-30 z-[9998] select-none"
+        title="Arrastrá el contador a cualquier esquina. Hacé clic para continuar la sesión."
+    >
+        <button
+            id="idle-session-keepalive"
+            type="button"
+            class="flex h-20 w-20 cursor-grab flex-col items-center justify-center rounded-full border border-amber-200 bg-white/95 shadow-xl backdrop-blur-sm transition-transform hover:scale-105 active:cursor-grabbing"
+            aria-label="Continuar sesión"
+        >
+            <span class="material-symbols-outlined text-[18px] leading-none text-amber-500">timer</span>
+            <span id="idle-session-countdown" class="mt-1 text-sm font-black tracking-wide text-amber-700">05:00</span>
+        </button>
     </div>
     
     <script>
@@ -546,11 +541,21 @@ if (avatarBtn && tooltip) {
             var IDLE_PANEL_DELAY_MS = 1000;
             var LAST_ACTIVITY_KEY = window.HZ_LAST_ACTIVITY_KEY || 'hz:last-activity-ts';
             var LOGOUT_SYNC_KEY = window.HZ_LOGOUT_SYNC_KEY || 'hz:forced-logout-ts';
+            var IDLE_WIDGET_POSITION_KEY = 'hz:idle-widget-position';
             var panel = document.getElementById('idle-session-panel');
             var countdown = document.getElementById('idle-session-countdown');
             var keepAliveButton = document.getElementById('idle-session-keepalive');
             var logoutInProgress = false;
             var lastWriteTs = 0;
+            var dragState = {
+                active: false,
+                moved: false,
+                startX: 0,
+                startY: 0,
+                offsetX: 0,
+                offsetY: 0,
+                suppressClick: false
+            };
 
             function nowTs() {
                 return Date.now();
@@ -566,6 +571,87 @@ if (avatarBtn && tooltip) {
             function readLastActivity() {
                 var stored = Number(localStorage.getItem(LAST_ACTIVITY_KEY) || '0');
                 return stored > 0 ? stored : nowTs();
+            }
+
+            function clampPosition(left, top) {
+                if (!panel) return { left: left, top: top };
+                var maxLeft = Math.max(12, window.innerWidth - panel.offsetWidth - 12);
+                var maxTop = Math.max(12, window.innerHeight - panel.offsetHeight - 12);
+                return {
+                    left: Math.min(Math.max(12, left), maxLeft),
+                    top: Math.min(Math.max(12, top), maxTop)
+                };
+            }
+
+            function setPanelPosition(left, top) {
+                if (!panel) return;
+                var clamped = clampPosition(left, top);
+                panel.style.left = clamped.left + 'px';
+                panel.style.top = clamped.top + 'px';
+                panel.style.right = 'auto';
+                panel.style.bottom = 'auto';
+            }
+
+            function savePanelPosition() {
+                if (!panel) return;
+                localStorage.setItem(IDLE_WIDGET_POSITION_KEY, JSON.stringify({
+                    left: parseFloat(panel.style.left || '0'),
+                    top: parseFloat(panel.style.top || '0')
+                }));
+            }
+
+            function restorePanelPosition() {
+                if (!panel) return;
+                try {
+                    var raw = localStorage.getItem(IDLE_WIDGET_POSITION_KEY);
+                    if (!raw) return;
+                    var saved = JSON.parse(raw);
+                    if (typeof saved.left === 'number' && typeof saved.top === 'number') {
+                        setPanelPosition(saved.left, saved.top);
+                    }
+                } catch (error) {}
+            }
+
+            function startDrag(event) {
+                if (!panel || !keepAliveButton || window.__hzForceLogoutInProgress || logoutInProgress) return;
+                var point = event.touches ? event.touches[0] : event;
+                var rect = panel.getBoundingClientRect();
+                setPanelPosition(rect.left, rect.top);
+                dragState.active = true;
+                dragState.moved = false;
+                dragState.startX = point.clientX;
+                dragState.startY = point.clientY;
+                dragState.offsetX = point.clientX - rect.left;
+                dragState.offsetY = point.clientY - rect.top;
+                keepAliveButton.classList.remove('cursor-grab');
+                keepAliveButton.classList.add('cursor-grabbing');
+                if (event.cancelable) event.preventDefault();
+            }
+
+            function moveDrag(event) {
+                if (!dragState.active || !panel) return;
+                var point = event.touches ? event.touches[0] : event;
+                var deltaX = Math.abs(point.clientX - dragState.startX);
+                var deltaY = Math.abs(point.clientY - dragState.startY);
+                if (deltaX > 4 || deltaY > 4) {
+                    dragState.moved = true;
+                }
+                setPanelPosition(point.clientX - dragState.offsetX, point.clientY - dragState.offsetY);
+                if (event.cancelable) event.preventDefault();
+            }
+
+            function endDrag() {
+                if (!dragState.active || !keepAliveButton) return;
+                dragState.active = false;
+                keepAliveButton.classList.remove('cursor-grabbing');
+                keepAliveButton.classList.add('cursor-grab');
+                if (dragState.moved) {
+                    dragState.suppressClick = true;
+                    savePanelPosition();
+                    window.setTimeout(function () {
+                        dragState.suppressClick = false;
+                    }, 150);
+                }
             }
 
             function markActivity(forceWrite) {
@@ -618,7 +704,10 @@ if (avatarBtn && tooltip) {
             }
 
             ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'].forEach(function (eventName) {
-                window.addEventListener(eventName, function () {
+                window.addEventListener(eventName, function (event) {
+                    if (panel && event && event.target && panel.contains(event.target)) {
+                        return;
+                    }
                     markActivity(false);
                 }, { passive: true });
             });
@@ -629,12 +718,27 @@ if (avatarBtn && tooltip) {
 
             window.addEventListener('storage', syncFromStorage);
 
+            window.addEventListener('resize', function () {
+                if (!panel || !panel.style.left || !panel.style.top) return;
+                setPanelPosition(parseFloat(panel.style.left), parseFloat(panel.style.top));
+            });
+
             if (keepAliveButton) {
+                keepAliveButton.addEventListener('mousedown', startDrag);
+                keepAliveButton.addEventListener('touchstart', startDrag, { passive: false });
                 keepAliveButton.addEventListener('click', function () {
+                    if (dragState.suppressClick) return;
                     markActivity(true);
                 });
             }
 
+            window.addEventListener('mousemove', moveDrag);
+            window.addEventListener('touchmove', moveDrag, { passive: false });
+            window.addEventListener('mouseup', endDrag);
+            window.addEventListener('touchend', endDrag);
+            window.addEventListener('touchcancel', endDrag);
+
+            restorePanelPosition();
             markActivity(true);
             window.setInterval(tickIdleCounter, 1000);
         })();

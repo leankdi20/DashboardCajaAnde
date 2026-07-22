@@ -84,7 +84,10 @@ def encuesta_whatsapp_detalle(request, respuesta_id):
 @login_required
 @permiso_requerido("dashboard.view_encuesta_satisfaccion_whatsapp")
 def encuesta_whatsapp_exportar(request):
-    filtros = {k: request.GET.get(k) for k in ("nombre", "cedula", "fecha_inicio", "fecha_fin")}
+    filtros = {
+        k: request.GET.get(k)
+        for k in ("nombre", "cedula", "fecha_inicio", "fecha_fin", "clasificacion")
+    }
     datos   = _rep.ReporteEncuestaWhatsapp.obtener_datos(filtros)
 
     encuestas, preguntas_orden = {}, []
