@@ -1,10 +1,13 @@
 import re
 import unicodedata
+from io import BytesIO
 from urllib.parse import quote
 
 from django.http import Http404
 from django.shortcuts import render
 from django.utils.timezone import localtime
+from openpyxl import load_workbook
+from openpyxl.styles import Alignment, Font, PatternFill
 
 
 EXPORT_TITLE_MAP = {
@@ -60,6 +63,28 @@ FILTER_PARAM_ALIASES = (
     ("hasta", "fecha_fin"),
 )
 EXTRA_FILTER_KEYS = ("clasificacion", "sucursal", "unidad", "agente", "gestion", "nombre", "cedula")
+IGNORED_FILTER_KEYS = {"page", "csrfmiddlewaretoken"}
+FILTER_LABELS = {
+    "fecha_inicio": "Fecha desde",
+    "fecha_fin": "Fecha hasta",
+    "desde": "Fecha desde",
+    "hasta": "Fecha hasta",
+    "clasificacion": "Clasificación filtro",
+    "sucursal": "Sucursal",
+    "unidad": "Unidad",
+    "agente": "Agente",
+    "gestion": "Gestión",
+    "nombre": "Nombre",
+    "cedula": "Cédula",
+    "encuesta_id": "Encuesta ID",
+    "respuesta_id": "Respuesta ID",
+    "banco": "Banco",
+    "tipo_ahorro": "Tipo ahorro",
+    "tipo_credito": "Tipo crédito",
+    "tipo_vehiculo": "Tipo vehículo",
+    "forma_pago": "Forma pago",
+    "numero_contrato": "Contrato",
+}
 
 
 def _slugify_filename_part(value, max_length=60):
@@ -111,6 +136,75 @@ def _build_export_filename(request):
     parts.append(f"Generado_{generated_at}")
 
     return f"{'_'.join(parts)}.xlsx"
+
+
+def _build_excel_filter_summary(request):
+    filters = []
+    for key, values in request.GET.lists():
+        if key in IGNORED_FILTER_KEYS:
+            continue
+        cleaned_values = [str(value).strip() for value in values if str(value).strip()]
+        if not cleaned_values:
+            continue
+        label = FILTER_LABELS.get(key, key.replace("_", " ").title())
+        filters.append(f"{label}: {', '.join(cleaned_values)}")
+
+    if not filters:
+        return "Filtros aplicados: Sin filtros"
+    return "Filtros aplicados: " + " | ".join(filters)
+
+
+def _build_excel_period_summary(request):
+    desde = _get_param(request, "fecha_inicio", "desde")
+    hasta = _get_param(request, "fecha_fin", "hasta")
+    if not desde and not hasta:
+        return "Periodo: Todos los registros"
+    return f"Periodo: {desde or 'Inicio'} a {hasta or 'Hoy'}"
+
+
+def _inject_excel_header_rows(response, request):
+    try:
+        workbook = load_workbook(filename=BytesIO(response.content))
+    except Exception:
+        return response
+
+    worksheet = workbook.active
+    worksheet.insert_rows(1, amount=3)
+
+    url_name = getattr(getattr(request, "resolver_match", None), "url_name", "") or ""
+    title = EXPORT_TITLE_MAP.get(url_name, "Reporte")
+    generated_at = localtime().strftime("%d/%m/%Y %H:%M")
+
+    worksheet["A1"] = f"Reporte: {title}"
+    worksheet["A2"] = f"{_build_excel_period_summary(request)} | {_build_excel_filter_summary(request)} | Generado: {generated_at}"
+    worksheet["A3"] = "Clasificación: CONFIDENCIAL"
+
+    max_col = max(worksheet.max_column, 8)
+    worksheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max_col)
+    worksheet.merge_cells(start_row=2, start_column=1, end_row=2, end_column=max_col)
+    worksheet.merge_cells(start_row=3, start_column=1, end_row=3, end_column=max_col)
+
+    worksheet["A1"].font = Font(bold=True, color="FFFFFF", size=12)
+    worksheet["A2"].font = Font(bold=True, size=10)
+    worksheet["A3"].font = Font(bold=True, size=10)
+
+    worksheet["A1"].fill = PatternFill("solid", fgColor="1F4E78")
+    worksheet["A2"].fill = PatternFill("solid", fgColor="D9E2F3")
+    worksheet["A3"].fill = PatternFill("solid", fgColor="FFF2CC")
+
+    worksheet["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    worksheet["A2"].alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    worksheet["A3"].alignment = Alignment(horizontal="left", vertical="center")
+
+    worksheet.row_dimensions[1].height = 24
+    worksheet.row_dimensions[2].height = 38
+    worksheet.row_dimensions[3].height = 22
+
+    output = BytesIO()
+    workbook.save(output)
+    response.content = output.getvalue()
+    response["Content-Length"] = str(len(response.content))
+    return response
 
 
 class LimpiarCachePermisosMiddleware:
@@ -201,6 +295,7 @@ class ExcelDownloadFilenameMiddleware:
         if "attachment" not in disposition.lower():
             return response
 
+        response = _inject_excel_header_rows(response, request)
         filename = _build_export_filename(request)
         response["Content-Disposition"] = (
             f"attachment; filename=\"{filename}\"; filename*=UTF-8''{quote(filename)}"

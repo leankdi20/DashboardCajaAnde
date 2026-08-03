@@ -25,16 +25,16 @@
 
        
         <!-- Cards KPIs -->
-        <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
             
             
-            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+            <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 flex items-center gap-4 min-w-0">
                 <div class="w-12 h-12 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary flex-shrink-0">
                     <span class="material-symbols-outlined">fact_check</span>
                 </div>
-                <div>
+                <div class="min-w-0">
                     <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Total Encuestas</p>
-                    <p class="text-2xl font-black text-on-surface">{{ total_encuestas|default:"—" }}</p>
+                    <p class="text-2xl xl:text-3xl font-black text-on-surface break-words">{{ total_encuestas|default:"—" }}</p>
                 </div>
             </div>
 

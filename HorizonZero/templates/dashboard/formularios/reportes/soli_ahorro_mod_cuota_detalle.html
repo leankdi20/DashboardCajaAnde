@@ -1,4 +1,5 @@
 {% extends "dashboard/formularios_base.html" %}
+{% load core_formatters %}
 
 {% block formulario_content %}
 
@@ -98,7 +99,7 @@
         <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Monto Cuota a Deducir</span>
         <span class="text-lg font-bold text-primary">
           {% if solicitud.MontoCuotaDeducir %}
-            ₡{{ solicitud.MontoCuotaDeducir|floatformat:0 }}
+            {{ solicitud.MontoCuotaDeducir|crc_currency }}
           {% else %}—{% endif %}
         </span>
       </div>

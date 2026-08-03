@@ -1,5 +1,6 @@
 {% extends "dashboard/formularios_base.html" %}
 {% load django_tables2 %}
+{% load core_formatters %}
 
 {% block formulario_content %}
 
@@ -45,7 +46,7 @@
       <p class="text-3xl font-bold
         {% if kpis.impacto_neto and kpis.impacto_neto > 0 %}text-green-600{% else %}text-red-500{% endif %}">
         {% if kpis.impacto_neto %}
-          {% if kpis.impacto_neto > 0 %}+{% endif %}₡{{ kpis.impacto_neto|floatformat:0 }}
+          {% if kpis.impacto_neto > 0 %}+{% endif %}{{ kpis.impacto_neto|crc_currency }}
         {% else %}₡0{% endif %}
       </p>
       <span class="text-xs text-on-surface-variant">captación neta de cuotas</span>
@@ -69,7 +70,7 @@
     <div class="pt-3 border-t border-outline-variant/10">
       <span class="text-xs text-on-surface-variant">Promedio por solicitud</span>
       <p class="text-base font-bold text-on-surface">
-        {% if kpis.promedio_aumentos %}₡{{ kpis.promedio_aumentos|floatformat:0 }}{% else %}—{% endif %}
+        {% if kpis.promedio_aumentos %}{{ kpis.promedio_aumentos|crc_currency }}{% else %}—{% endif %}
       </p>
     </div>
   </div>
@@ -86,7 +87,7 @@
     <div class="pt-3 border-t border-outline-variant/10">
       <span class="text-xs text-on-surface-variant">Promedio por solicitud</span>
       <p class="text-base font-bold text-on-surface">
-        {% if kpis.promedio_disminuciones %}₡{{ kpis.promedio_disminuciones|floatformat:0 }}{% else %}—{% endif %}
+        {% if kpis.promedio_disminuciones %}{{ kpis.promedio_disminuciones|crc_currency }}{% else %}—{% endif %}
       </p>
     </div>
   </div>

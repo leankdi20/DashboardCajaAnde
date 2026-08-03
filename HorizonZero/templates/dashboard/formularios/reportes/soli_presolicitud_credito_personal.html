@@ -1,6 +1,7 @@
 {% extends "dashboard/formularios_base.html" %}
 {% load django_tables2 %}
 {% load humanize %}
+{% load core_formatters %}
 
 {% block formulario_content %}
 
@@ -34,7 +35,7 @@
     <div>
       <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Monto Promedio</span>
       <p class="text-3xl font-bold text-on-surface">
-        {% if kpis.promedio_monto %}₡{{ kpis.promedio_monto|floatformat:0|intcomma }}{% else %}—{% endif %}
+        {% if kpis.promedio_monto %}{{ kpis.promedio_monto|crc_currency }}{% else %}—{% endif %}
       </p>
       <span class="text-xs text-on-surface-variant">crédito promedio solicitado</span>
     </div>

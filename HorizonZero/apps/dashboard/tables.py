@@ -1,6 +1,7 @@
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 import django_tables2 as tables
+from apps.core.formatters import format_currency_value
 
 # ENCUESTA SATISFACCION
 class EncuestaSatisfaccionTable(tables.Table):
@@ -347,12 +348,7 @@ class SolicitudAhorroModCuotaTable(tables.Table):
     acciones         = tables.Column(empty_values=(), orderable=False, verbose_name="Acciones")
  
     def render_MontoCuotaDeducir(self, value):
-        if value is None:
-            return "—"
-        try:
-            return f"₡{int(value):,}".replace(",", ".")
-        except (ValueError, TypeError):
-            return str(value)
+        return format_currency_value(value)
  
     def render_acciones(self, record):
         return mark_safe(
@@ -410,12 +406,7 @@ class SolicitudAutorizacionAhorroNuevoTable(tables.Table):
     acciones        = tables.Column(empty_values=(), orderable=False, verbose_name="Acciones")
  
     def render_MontoCuota(self, value):
-        if value is None:
-            return "—"
-        try:
-            return f"₡{int(value):,}".replace(",", ".")
-        except (ValueError, TypeError):
-            return str(value)
+        return format_currency_value(value)
  
     def render_acciones(self, record):
         return mark_safe(
@@ -448,12 +439,7 @@ class SolicitudCompraVehiculoTable(tables.Table):
     acciones              = tables.Column(empty_values=(), orderable=False, verbose_name="Acciones")
  
     def render_MontoCreditoSolicitado(self, value):
-        if value is None:
-            return "—"
-        try:
-            return f"₡{int(float(value)):,}".replace(",", ".")
-        except (ValueError, TypeError):
-            return str(value)
+        return format_currency_value(value)
  
     def render_acciones(self, record):
         return mark_safe(
@@ -537,12 +523,7 @@ class SolicitudPresolicitudCreditoPersonalTable(tables.Table):
     acciones              = tables.Column(empty_values=(), orderable=False, verbose_name="Acciones")
  
     def render_Monto(self, value):
-        if value is None:
-            return "—"
-        try:
-            return f"₡{int(float(value)):,}".replace(",", ".")
-        except (ValueError, TypeError):
-            return str(value)
+        return format_currency_value(value)
  
     def render_acciones(self, record):
         return mark_safe(
@@ -599,12 +580,7 @@ class ComprobantesPagoTable(tables.Table):
     acciones         = tables.Column(empty_values=(), orderable=False, verbose_name="Acciones")
  
     def render_Monto(self, value):
-        if value is None:
-            return "—"
-        try:
-            return f"₡{int(float(value)):,}".replace(",", ".")
-        except (ValueError, TypeError):
-            return str(value)
+        return format_currency_value(value)
  
     def render_acciones(self, record):
         return mark_safe(
